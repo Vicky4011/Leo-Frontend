@@ -4,6 +4,14 @@ import { useState } from "react";
 import { ThemeToggle } from "../src/components/theme-toggle";
 import { ParticlesOrb } from "../src/registry/orbe/particles-orb/particles-orb";
 
+const SIZE_PRESETS = {
+  SM: 260,
+  MD: 420,
+  LG: 560,
+} as const;
+
+type SizeKey = keyof typeof SIZE_PRESETS;
+
 const PRESET_COLORS = [
   "#4EA7FF",
   "#9B4DFF",
@@ -27,6 +35,7 @@ export default function Home() {
 
   const [colorFrom, setColorFrom] = useState("#f0abfc");
   const [colorTo, setColorTo] = useState("#818cf8");
+  const [sizeKey, setSizeKey] = useState<SizeKey>("MD");
 
   return (
     <main
@@ -59,7 +68,7 @@ export default function Home() {
         ========================== */}
         <ParticlesOrb
           state={state}
-          size={420}
+          size={SIZE_PRESETS[sizeKey]}
           speed={1}
           colorFrom={colorFrom}
           colorTo={colorTo}
@@ -239,6 +248,72 @@ export default function Home() {
                 To
               </span>
             </label>
+          </div>
+        </div>
+
+
+        {/* =========================
+               SIZE PICKER
+        ========================== */}
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 650,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+        {/* Size title */}
+      <span
+        style={{
+        fontSize: 12,
+        color: "var(--foreground)",
+        lineHeight: 1,
+        fontWeight: 400,
+        }}
+      >
+        Size
+      </span>
+
+        {/* Segmented control */}
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 2,
+            padding: 3,
+            borderRadius: 10,
+            border: "1px solid var(--toggle-border)",
+            backgroundColor: "var(--toggle-bg)",
+            width: "fit-content",
+          }}
+        >
+          {(Object.keys(SIZE_PRESETS) as SizeKey[]).map((key) => {
+          const isSelected = sizeKey === key;
+
+          return (
+              <button
+                key={key}
+                type="button"
+                title={`${key} (${SIZE_PRESETS[key]}px)`}
+                onClick={() => setSizeKey(key)}
+                  style={{
+                    padding: "6px 16px",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    border: "none",
+                    borderRadius: 7,
+                    cursor: "pointer",
+                    color: isSelected ? "#ffffff" : "var(--foreground)",
+                    backgroundColor: isSelected ? "#3f5efb" : "transparent",
+                    transition: "background-color 0.15s ease, color 0.15s ease",
+                  }}
+              >
+                {key}
+              </button>
+            );
+            })}
           </div>
         </div>
 
