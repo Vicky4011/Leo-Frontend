@@ -16,7 +16,7 @@ import {
 import { useOrbLevel } from '../../lib/use-orb-level';
 import { observeActivity } from '../../lib/use-in-view';
 
-const PARTICLE_COUNT = 720;
+const PARTICLE_COUNT = 800;
 const TWO_PI = Math.PI * 2;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const STATIC_TIME = 1.7;

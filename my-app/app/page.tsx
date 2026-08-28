@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ThemeToggle } from "../src/components/theme-toggle";
 import { SettingsPanel, SIZE_PRESETS, type SizeKey } from "../src/components/settings-panel";
+import { LeoInputBar, type LeoInputBarHandle } from "../src/components/leo-input-bar";
 import { ParticlesOrb } from "../src/registry/orbe/particles-orb/particles-orb";
-import { LeoInputBar } from "../src/components/leo-input-bar";
 
 export default function Home() {
   const [state, setState] = useState<
@@ -20,6 +20,17 @@ export default function Home() {
   const [colorFrom, setColorFrom] = useState("#f0abfc");
   const [colorTo, setColorTo] = useState("#818cf8");
   const [sizeKey, setSizeKey] = useState<SizeKey>("MD");
+
+  const orbSize = SIZE_PRESETS[sizeKey];
+  const orbClickDiameter = Math.round(orbSize * 0.68);
+
+  const leoInputRef = useRef<LeoInputBarHandle>(null);
+
+  const handleOrbClick = () => {
+    if (state === "listening") return;
+    setState("listening");
+    leoInputRef.current?.startListening();
+  };
 
   return (
     <main
@@ -47,7 +58,6 @@ export default function Home() {
         onSizeChange={setSizeKey}
       />
 
-      {/* Orb + state buttons — size changes here no longer affect the input bar below */}
       <div
         style={{
           display: "flex",
@@ -56,16 +66,56 @@ export default function Home() {
           gap: 32,
         }}
       >
-        <ParticlesOrb
-          state={state}
-          size={SIZE_PRESETS[sizeKey]}
-          speed={1}
-          colorFrom={colorFrom}
-          colorTo={colorTo}
-          label="Particles Orb"
-        />
+        <div
+          style={{
+            position: "relative",
+            width: orbSize,
+            height: orbSize,
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <div style={{ pointerEvents: "none" }}>
+            <ParticlesOrb
+              state={state}
+              size={orbSize}
+              speed={1}
+              colorFrom={colorFrom}
+              colorTo={colorTo}
+              label="Particles Orb"
+            />
+          </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          <div
+            onClick={handleOrbClick}
+            role="button"
+            tabIndex={0}
+            aria-label="Start listening"
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleOrbClick();
+              }
+            }}
+            style={{
+              position: "absolute",
+              width: orbClickDiameter,
+              height: orbClickDiameter,
+              borderRadius: "50%",
+              cursor: "pointer",
+              border: "1px dashed red",
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
           <button onClick={() => setState("idle")}>Idle</button>
           <button onClick={() => setState("connecting")}>Connecting</button>
           <button onClick={() => setState("listening")}>Listening</button>
@@ -76,7 +126,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Input bar — fixed to the bottom of the viewport, independent of orb size */}
       <div
         style={{
           position: "fixed",
@@ -91,14 +140,16 @@ export default function Home() {
         }}
       >
         <LeoInputBar
+          ref={leoInputRef}
           onSend={async (message, files) => {
             console.log("message:", message, "files:", files);
           }}
           onAttach={(files) => console.log("attached:", files)}
-          onMicClick={(listening) => console.log("mic listening:", listening)}
+          onMicClick={(listening) => {
+            setState(listening ? "listening" : "idle");
+          }}
         />
       </div>
     </main>
   );
-
 }

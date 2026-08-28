@@ -1,17 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
+
+export interface LeoInputBarHandle {
+  startListening: () => void;
+  stopListening: () => void;
+}
 
 interface LeoInputBarProps {
   onSend?: (message: string, files: File[]) => void | Promise<void>;
   onAttach?: (files: File[]) => void;
   onMicClick?: (listening: boolean) => void;
+  ref?: React.Ref<LeoInputBarHandle>;
 }
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE_MB = 20;
 
-export const LeoInputBar = ({ onSend, onAttach, onMicClick }: LeoInputBarProps) => {
+export const LeoInputBar = ({ onSend, onAttach, onMicClick, ref }: LeoInputBarProps) => {
   const [value, setValue] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [focused, setFocused] = useState(false);
@@ -53,10 +59,12 @@ export const LeoInputBar = ({ onSend, onAttach, onMicClick }: LeoInputBarProps) 
 
     recognition.onerror = () => {
       setIsListening(false);
+      onMicClick?.(false);
     };
 
     recognition.onend = () => {
       setIsListening(false);
+      onMicClick?.(false);
     };
 
     recognitionRef.current = recognition;
@@ -65,7 +73,36 @@ export const LeoInputBar = ({ onSend, onAttach, onMicClick }: LeoInputBarProps) 
       recognition.stop();
       recognitionRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const startListening = () => {
+    if (!micSupported || !recognitionRef.current || isListening) return;
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+      onMicClick?.(true);
+    } catch {
+      setIsListening(false);
+    }
+  };
+
+  const stopListening = () => {
+    if (!recognitionRef.current || !isListening) return;
+    recognitionRef.current.stop();
+    setIsListening(false);
+    onMicClick?.(false);
+  };
+
+  useImperativeHandle(ref, () => ({
+    startListening,
+    stopListening,
+  }));
+
+  const toggleMic = () => {
+    if (isListening) stopListening();
+    else startListening();
+  };
 
   const resizeTextarea = () => {
     const el = textareaRef.current;
@@ -136,24 +173,6 @@ export const LeoInputBar = ({ onSend, onAttach, onMicClick }: LeoInputBarProps) 
       onAttach?.(next);
       return next;
     });
-  };
-
-  const toggleMic = () => {
-    if (!micSupported || !recognitionRef.current) return;
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-      onMicClick?.(false);
-    } else {
-      try {
-        recognitionRef.current.start();
-        setIsListening(true);
-        onMicClick?.(true);
-      } catch {
-        setIsListening(false);
-      }
-    }
   };
 
   const formatSize = (bytes: number) => {
@@ -239,9 +258,7 @@ export const LeoInputBar = ({ onSend, onAttach, onMicClick }: LeoInputBarProps) 
         </div>
       )}
 
-      {fileError && (
-        <span style={{ fontSize: 12, color: "#e5484d" }}>{fileError}</span>
-      )}
+      {fileError && <span style={{ fontSize: 12, color: "#e5484d" }}>{fileError}</span>}
 
       <textarea
         ref={textareaRef}
