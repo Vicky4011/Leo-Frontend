@@ -2,19 +2,35 @@
 
 :root,
 [data-theme="light"] {
-  --background: #f4f4f5;
+  --background: #f0f8ff;
   --foreground: #171717;
   --toggle-bg: #ffffff;
   --toggle-border: #d4d4d8;
   --toggle-hover: #ececef;
+  --input-placeholder: #8a8a92;
+  --input-icon: #6b6b74;
+  --input-accent: #6d28d9;
+  --input-accent-soft: rgba(109, 40, 217, 0.1);
+  --input-focus-border: rgba(109, 40, 217, 0.35);
+  --input-focus-shadow: 0 0 0 3px rgba(109, 40, 217, 0.08);
 }
 
 [data-theme="dark"] {
-  --background: #000000;
+  --background: #0c0c0c;
   --foreground: #ededed;
   --toggle-bg: #18181b;
   --toggle-border: #3f3f46;
   --toggle-hover: #27272a;
+  --input-placeholder: #8f8f97;
+  --input-icon: #a1a1aa;
+  --input-accent: #8b5cf6;
+  --input-accent-soft: rgba(139, 92, 246, 0.16);
+  --input-focus-border: rgba(139, 92, 246, 0.55);
+  --input-focus-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14), 0 0 24px rgba(56, 189, 248, 0.1);
+}
+
+.leo-input-textarea::placeholder {
+  color: var(--input-placeholder);
 }
 
 @theme inline {
@@ -111,5 +127,24 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes leo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes leo-mic-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
   }
 }

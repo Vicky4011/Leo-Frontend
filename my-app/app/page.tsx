@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ThemeToggle } from "../src/components/theme-toggle";
 import { SettingsPanel, SIZE_PRESETS, type SizeKey } from "../src/components/settings-panel";
 import { ParticlesOrb } from "../src/registry/orbe/particles-orb/particles-orb";
+import { LeoInputBar } from "../src/components/leo-input-bar";
+
 
 export default function Home() {
   const [state, setState] = useState<
@@ -83,6 +85,15 @@ export default function Home() {
           <button onClick={() => setState("disabled")}>Disabled</button>
         </div>
       </div>
+      <LeoInputBar
+        onSend={async (message, files) => {
+        console.log("message:", message, "files:", files);
+       // e.g. call your API here
+        }}
+        onAttach={(files) => console.log("attached:", files)}
+        onMicClick={(listening) => console.log("mic listening:", listening)}
+      />
     </main>
   );
+
 }
