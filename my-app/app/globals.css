@@ -21,7 +21,7 @@
   --toggle-bg: #18181b;
   --toggle-border: #3f3f46;
   --toggle-hover: #27272a;
-  --input-placeholder: #8f8f97;
+  --input-placeholder: #8a8a92;
   --input-icon: #a1a1aa;
   --input-accent: #8b5cf6;
   --input-accent-soft: rgba(139, 92, 246, 0.16);
@@ -31,6 +31,7 @@
 
 .leo-input-textarea::placeholder {
   color: var(--input-placeholder);
+  opacity: 1;
 }
 
 @theme inline {
@@ -130,13 +131,23 @@ body {
   }
 }
 
-@keyframes leo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 @keyframes leo-mic-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 0.7;
+  }
+}
+
+@keyframes leo-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .leo-input-textarea {
