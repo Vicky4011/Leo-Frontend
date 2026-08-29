@@ -111,6 +111,12 @@ export const LeoInputBar = ({ onSend, onAttach, onMicClick, ref }: LeoInputBarPr
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   };
 
+  // Keep the textarea sized to its content no matter how `value` changes
+  // (typing, voice transcription, clearing after send, etc.)
+  useEffect(() => {
+    resizeTextarea();
+  }, [value]);
+
   const handleSend = async () => {
     const trimmed = value.trim();
     if (!trimmed || isSending) return;
@@ -120,7 +126,6 @@ export const LeoInputBar = ({ onSend, onAttach, onMicClick, ref }: LeoInputBarPr
       await onSend?.(trimmed, files);
       setValue("");
       setFiles([]);
-      requestAnimationFrame(resizeTextarea);
     } finally {
       setIsSending(false);
     }
@@ -264,16 +269,20 @@ export const LeoInputBar = ({ onSend, onAttach, onMicClick, ref }: LeoInputBarPr
         ref={textareaRef}
         className="leo-input-textarea"
         value={value}
-        onChange={(event) => {
-          setValue(event.target.value);
-          resizeTextarea();
-        }}
+        onChange={(event) => setValue(event.target.value)}
         onKeyDown={handleKeyDown}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         rows={1}
         placeholder={isListening ? "Listening..." : "Ask Leo anything..."}
         aria-label="Ask Leo anything"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        data-lpignore="true"
+        data-1p-ignore="true"
+        data-form-type="other"
         style={{
           resize: "none",
           border: "none",

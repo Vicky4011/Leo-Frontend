@@ -20,6 +20,7 @@ export default function Home() {
   const [colorFrom, setColorFrom] = useState("#f0abfc");
   const [colorTo, setColorTo] = useState("#818cf8");
   const [sizeKey, setSizeKey] = useState<SizeKey>("MD");
+  const [isInputHidden, setIsInputHidden] = useState(false);
 
   const orbSize = SIZE_PRESETS[sizeKey];
   const orbClickDiameter = Math.round(orbSize * 0.68);
@@ -27,9 +28,17 @@ export default function Home() {
   const leoInputRef = useRef<LeoInputBarHandle>(null);
 
   const handleOrbClick = () => {
-    if (state === "listening") return;
-    setState("listening");
-    leoInputRef.current?.startListening();
+    if (state === "listening") {
+      leoInputRef.current?.stopListening();
+    } else {
+      setState("listening");
+      setIsInputHidden(true);
+      leoInputRef.current?.startListening();
+    }
+  };
+
+  const exitLiveMode = () => {
+    leoInputRef.current?.stopListening();
   };
 
   return (
@@ -90,7 +99,7 @@ export default function Home() {
             onClick={handleOrbClick}
             role="button"
             tabIndex={0}
-            aria-label="Start listening"
+            aria-label={state === "listening" ? "Stop listening" : "Start listening"}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
@@ -103,7 +112,6 @@ export default function Home() {
               height: orbClickDiameter,
               borderRadius: "50%",
               cursor: "pointer",
-              border: "1px dashed red",
             }}
           />
         </div>
@@ -126,6 +134,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Bottom slot: crossfades between LeoInputBar and the exit-live-mode X button */}
       <div
         style={{
           position: "fixed",
@@ -139,16 +148,88 @@ export default function Home() {
           zIndex: 40,
         }}
       >
-        <LeoInputBar
-          ref={leoInputRef}
-          onSend={async (message, files) => {
-            console.log("message:", message, "files:", files);
-          }}
-          onAttach={(files) => console.log("attached:", files)}
-          onMicClick={(listening) => {
-            setState(listening ? "listening" : "idle");
-          }}
-        />
+        <div style={{ position: "relative", width: "100%", maxWidth: 620, height: 76 }}>
+          {/* Input bar */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              justifyContent: "center",
+              opacity: isInputHidden ? 0 : 1,
+              transform: isInputHidden
+                ? "translateY(24px) scale(0.96)"
+                : "translateY(0) scale(1)",
+              pointerEvents: isInputHidden ? "none" : "auto",
+              transition: "opacity 0.35s ease, transform 0.35s ease",
+            }}
+          >
+            <LeoInputBar
+              ref={leoInputRef}
+              onSend={async (message, files) => {
+                console.log("message:", message, "files:", files);
+              }}
+              onAttach={(files) => console.log("attached:", files)}
+              onMicClick={(listening) => {
+                setState(listening ? "listening" : "idle");
+                if (!listening) {
+                  setIsInputHidden(false);
+                }
+              }}
+            />
+          </div>
+
+          {/* Exit live-mode button */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              opacity: isInputHidden ? 1 : 0,
+              transform: isInputHidden
+                ? "translateY(0) scale(1)"
+                : "translateY(24px) scale(0.9)",
+              pointerEvents: isInputHidden ? "auto" : "none",
+              transition: "opacity 0.35s ease, transform 0.35s ease",
+            }}
+          >
+            <button
+              type="button"
+              onClick={exitLiveMode}
+              aria-label="Exit live mode"
+              title="Exit live mode"
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                border: "1px solid var(--toggle-border)",
+                background: "var(--toggle-bg)",
+                color: "var(--foreground)",
+                display: "grid",
+                placeItems: "center",
+                cursor: "pointer",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+              }}
+              onMouseEnter={(event) => {
+                event.currentTarget.style.background = "var(--toggle-hover)";
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.background = "var(--toggle-bg)";
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   );
