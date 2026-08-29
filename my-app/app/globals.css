@@ -2,7 +2,7 @@
 
 :root,
 [data-theme="light"] {
-  --background: #fdfdfd;
+  --background: #f0f8ff;
   --foreground: #171717;
   --toggle-bg: #ffffff;
   --toggle-border: #d4d4d8;
@@ -49,7 +49,7 @@ body {
 
 .theme-toggle {
   position: fixed;
-  top: 16px;
+  top: 48px;
   right: 16px;
   z-index: 50;
   display: grid;

@@ -6,8 +6,20 @@ type Theme = "light" | "dark";
 
 const THEME_KEY = "theme";
 
+export {};
+
+declare global {
+  interface Window {
+    electronAPI?: {
+      platform: string;
+      setTitleBarTheme: (isDark: boolean) => Promise<void>;
+    };
+  }
+}
+
 function applyTheme(theme: Theme) {
   document.documentElement.setAttribute("data-theme", theme);
+  window.electronAPI?.setTitleBarTheme?.(theme === "dark");
 }
 
 export function ThemeToggle() {
