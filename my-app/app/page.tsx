@@ -357,7 +357,7 @@ export default function Home() {
           zIndex: 1000,
         }}
       >
-        Live Mode Start
+        Live Mode Starts
       </div>
 
       {/* ========================================================
