@@ -41,6 +41,20 @@ const MINI_ORB_RIGHT_MARGIN = 16;
 const MINI_ORB_SCALE = 0.55;
 
 // ------------------------------------------------------------
+// SIDEBAR PAGES
+// ------------------------------------------------------------
+
+type ActivePage = "email" | "calendar" | "reminder" | null;
+
+const PAGE_TITLES: Record<Exclude<ActivePage, null>, string> = {
+  email: "E-Mail",
+  calendar: "Calendar",
+  reminder: "Reminder",
+};
+
+const SIDEBAR_WIDTH = 240;
+
+// ------------------------------------------------------------
 // HOME
 // ------------------------------------------------------------
 
@@ -50,6 +64,12 @@ export default function Home() {
   // ----------------------------------------------------------
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // ----------------------------------------------------------
+  // ACTIVE SIDEBAR PAGE (E-Mail / Calendar / Reminder)
+  // ----------------------------------------------------------
+
+  const [activePage, setActivePage] = useState<ActivePage>(null);
 
   // ----------------------------------------------------------
   // SETTINGS
@@ -310,14 +330,22 @@ export default function Home() {
 
         <Sidebar
           open={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          onNavigate={(key) => {
+          onClose={() => {
             setIsSidebarOpen(false);
-
+            setActivePage(null);
+          }}
+          hideBackdrop={activePage !== null}
+          onNavigate={(key) => {
             if (key === "settings") {
+              setIsSidebarOpen(false);
+              setActivePage(null);
               setIsSettingsOpen(true);
+            } else if (key === "chat") {
+              setActivePage(null);
+              setIsSidebarOpen(false);
             } else {
-              console.log("navigate to:", key);
+              setActivePage(key as ActivePage);
+              // Sidebar stays open/pinned so the page shows beside it
             }
           }}
         />
@@ -387,18 +415,101 @@ export default function Home() {
           ====================================================== */}
 
       <SettingsPanel
-  open={isSettingsOpen}
-  onClose={() => {
-    setIsSettingsOpen(false);
-    setIsSidebarOpen(true);
-  }}
-  colorFrom={colorFrom}
-  colorTo={colorTo}
-  onColorFromChange={setColorFrom}
-  onColorToChange={setColorTo}
-  sizeKey={sizeKey}
-  onSizeChange={setSizeKey}
-/>
+        open={isSettingsOpen}
+        onClose={() => {
+          setIsSettingsOpen(false);
+          setIsSidebarOpen(true);
+        }}
+        colorFrom={colorFrom}
+        colorTo={colorTo}
+        onColorFromChange={setColorFrom}
+        onColorToChange={setColorTo}
+        sizeKey={sizeKey}
+        onSizeChange={setSizeKey}
+      />
+
+      {/* ======================================================
+          SIDEBAR PAGE (E-Mail / Calendar / Reminder)
+          Fills everything to the right of the pinned sidebar.
+          ====================================================== */}
+
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: SIDEBAR_WIDTH,
+          right: 0,
+          height: "100%",
+          background: "var(--background)",
+          zIndex: 75,
+          display: "flex",
+          flexDirection: "column",
+          padding: "48px 28px 28px",
+          boxSizing: "border-box",
+          overflowY: "auto",
+          transform: activePage ? "translateX(0)" : "translateX(24px)",
+          opacity: activePage ? 1 : 0,
+          pointerEvents: activePage ? "auto" : "none",
+          transition:
+            "opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 24,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setActivePage(null)}
+            aria-label="Close page"
+            style={{
+              display: "grid",
+              placeItems: "center",
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: "1px solid var(--toggle-border)",
+              background: "var(--toggle-bg)",
+              color: "var(--foreground)",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(event) => {
+              event.currentTarget.style.background = "var(--toggle-hover)";
+            }}
+            onMouseLeave={(event) => {
+              event.currentTarget.style.background = "var(--toggle-bg)";
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M6 6l12 12M18 6L6 18"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+
+          <h2
+            style={{
+              fontSize: 18,
+              fontWeight: 600,
+              color: "var(--foreground)",
+              margin: 0,
+            }}
+          >
+            {activePage ? PAGE_TITLES[activePage] : ""}
+          </h2>
+        </div>
+
+        <p style={{ color: "var(--input-placeholder)", fontSize: 14, margin: 0 }}>
+          This is the {activePage ? PAGE_TITLES[activePage] : ""} page — content coming soon.
+        </p>
+      </div>
 
       {/* ======================================================
           FLOATING / ANIMATABLE ORB

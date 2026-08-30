@@ -12,6 +12,7 @@ interface SidebarProps {
   open: boolean;
   onClose: () => void;
   onNavigate?: (key: string) => void;
+  hideBackdrop?: boolean;
 }
 
 const TOP_ITEMS: SidebarItem[] = [
@@ -21,7 +22,7 @@ const TOP_ITEMS: SidebarItem[] = [
   { key: "reminder", label: "Reminder", icon: <ReminderIcon /> },
 ];
 
-export const Sidebar = ({ open, onClose, onNavigate }: SidebarProps) => {
+export const Sidebar = ({ open, onClose, onNavigate, hideBackdrop = false }: SidebarProps) => {
   useEffect(() => {
     if (!open) return;
     const handleKey = (event: KeyboardEvent) => {
@@ -34,19 +35,21 @@ export const Sidebar = ({ open, onClose, onNavigate }: SidebarProps) => {
   return (
     <>
       {/* Backdrop */}
-      <div
-        onClick={onClose}
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0, 0, 0, 0.45)",
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? "auto" : "none",
-          transition: "opacity 0.3s ease",
-          zIndex: 70,
-        }}
-      />
+      {!hideBackdrop && (
+        <div
+          onClick={onClose}
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.45)",
+            opacity: open ? 1 : 0,
+            pointerEvents: open ? "auto" : "none",
+            transition: "opacity 0.3s ease",
+            zIndex: 70,
+          }}
+        />
+      )}
 
       {/* Sliding panel */}
       <div
