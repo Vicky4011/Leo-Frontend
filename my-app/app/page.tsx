@@ -175,6 +175,7 @@ export default function Home() {
    * PAGE
    * ============================================================
    */
+  
 
   return (
     <main
@@ -189,8 +190,34 @@ export default function Home() {
         color: "var(--foreground)",
         position: "relative",
         overflow: "hidden",
-      }}
+      }}  
     >
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: 32,
+        display: "flex",
+        alignItems: "center",
+        paddingLeft: 14,
+        zIndex: 60,
+        WebkitAppRegion: "drag",
+      } as React.CSSProperties}
+    >
+  <span
+    style={{
+      fontSize: 13,
+      fontWeight: 600,
+      color: "var(--foreground)",
+      letterSpacing: "0.3px",
+      userSelect: "none",
+    }}
+  >
+    Leo
+  </span>
+</div>
       {/* ======================================================
           THEME TOGGLE
           ====================================================== */}
@@ -228,7 +255,7 @@ export default function Home() {
           transformOrigin: "top right",
           transform: isOrbAnimated ? `scale(${MINI_ORB_SCALE})` : "scale(1)",
           transition:
-            "top 1.6s cubic-bezier(0.22, 1, 0.36, 1), left 1.6s cubic-bezier(0.22, 1, 0.36, 1), transform 1.6s cubic-bezier(0.22, 1, 0.36, 1)",
+            "top 2.6s cubic-bezier(0.22, 1, 0.36, 1), left 2.6s cubic-bezier(0.22, 1, 0.36, 1), transform 2.6s cubic-bezier(0.22, 1, 0.36, 1)",
           zIndex: 45,
         }}
       >
