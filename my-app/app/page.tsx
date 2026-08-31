@@ -42,21 +42,32 @@ type ActivePage =
   | "email"
   | "calendar"
   | "file"
+  | "settings"
+  | "orbCustomization"
   | null;
 
 // ============================================================
 // PAGE TITLES
 // ============================================================
 
-const PAGE_TITLES: Record<
-  Exclude<ActivePage, null>,
-  string
-> = {
+const PAGE_TITLES: Record<Exclude<ActivePage, null>, string> = {
   task: "Task",
   email: "E-Mail",
   calendar: "Calendar",
   file: "File",
+  settings: "Settings",
+  orbCustomization: "Orb Customization",
 };
+
+const ORB_PRESET_COLORS = [
+  "#4EA7FF",
+  "#9B4DFF",
+  "#00C8B7",
+  "#FF6818",
+  "#D943D9",
+  "#4DB8FF",
+  "#C5D0DF",
+];
 
 // ============================================================
 // TASK DATA
@@ -174,6 +185,40 @@ const SAMPLE_EMAILS = [
 ];
 
 // ============================================================
+// CALENDAR DATA
+// ============================================================
+
+interface CalendarEventItem {
+  title: string;
+  time?: string;
+}
+
+// Sample events keyed by "YYYY-MM-DD" — replace with real Google Calendar data later
+const SAMPLE_CALENDAR_EVENTS: Record<string, CalendarEventItem[]> = {
+  "2026-08-06": [{ title: "Design review", time: "3:00 PM" }],
+  "2026-08-14": [{ title: "Leo Phase 3.5 demo", time: "11:00 AM" }],
+  "2026-08-21": [
+    { title: "Sprint planning", time: "10:00 AM" },
+    { title: "1:1 with mentor", time: "4:30 PM" },
+  ],
+  "2026-10-04": [{ title: "My Birthday" }],
+};
+
+const CALENDAR_WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+const toDateKey = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+// ============================================================
 // MAIN
 // ============================================================
 
@@ -221,6 +266,72 @@ export default function Home() {
 
   const [isSettingsOpen, setIsSettingsOpen] =
     useState(false);
+
+
+  // ==========================================================
+// CALENDAR
+// ==========================================================
+
+const today = useMemo(() => new Date(), []);
+
+const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(
+  () => new Date(today.getFullYear(), today.getMonth(), 1)
+);
+
+const [calendarSelectedDate, setCalendarSelectedDate] = useState(today);
+
+const calendarGoToday = () => {
+  setCalendarVisibleMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+  setCalendarSelectedDate(today);
+};
+
+const calendarGoPrevMonth = () => {
+  setCalendarVisibleMonth(
+    (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+  );
+};
+
+const calendarGoNextMonth = () => {
+  setCalendarVisibleMonth(
+    (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+  );
+};
+
+const calendarWeeks = useMemo(() => {
+  const year = calendarVisibleMonth.getFullYear();
+  const month = calendarVisibleMonth.getMonth();
+
+  const firstOfMonth = new Date(year, month, 1);
+  const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // Monday = 0
+
+  const startDate = new Date(year, month, 1 - firstWeekday);
+
+  const days: Date[] = [];
+  for (let i = 0; i < 42; i += 1) {
+    days.push(new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i));
+  }
+
+  const result: Date[][] = [];
+  for (let i = 0; i < 6; i += 1) {
+    result.push(days.slice(i * 7, i * 7 + 7));
+  }
+  return result;
+}, [calendarVisibleMonth]);
+
+const calendarMonthLabel = calendarVisibleMonth.toLocaleDateString("en-US", {
+  month: "long",
+  year: "numeric",
+});
+
+const calendarSelectedLabel = calendarSelectedDate.toLocaleDateString("en-US", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const calendarSelectedEvents =
+  SAMPLE_CALENDAR_EVENTS[toDateKey(calendarSelectedDate)] ?? [];
 
   // ==========================================================
   // GOOGLE CONNECTION
@@ -648,20 +759,17 @@ export default function Home() {
                 : ""}
             </h2>
 
-            {activePage ===
-              "task" && (
+            {(activePage === "task" || activePage === "calendar") && (
               <p
                 style={{
-                  margin:
-                    "4px 0 0",
-                  fontSize: 13,
-                  color:
-                    "var(--input-placeholder)",
+                margin: "4px 0 0",
+                fontSize: 13,
+                color: "var(--input-placeholder)",
                 }}
               >
-                Your Google Tasks
+              {activePage === "task" ? "Your Google Tasks" : "Your Google Calendar"}
               </p>
-            )}
+          )}
           </div>
 
           {/* ==================================================
@@ -1124,20 +1232,220 @@ export default function Home() {
             CALENDAR
             ==================================================== */}
 
-        {activePage ===
-          "calendar" && (
-          <p
+        {activePage === "calendar" && (
+  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    {/* Light calendar card */}
+    <div
+      style={{
+        background: "var(--toggle-bg)",
+        border: "1px solid var(--toggle-border)",
+        borderRadius: 18,
+        padding: "18px 20px 22px",
+        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.25)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 14,
+        }}
+      >
+        <button
+          type="button"
+          onClick={calendarGoPrevMonth}
+          aria-label="Previous month"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            border: "none",
+            background: "transparent",
+            color: "var(--foreground)",
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
+            fontSize: 16,
+          }}
+        >
+          ‹
+        </button>
+
+        <span style={{ fontSize: 15, fontWeight: 700, color: "var(--foreground)", }}>
+          {calendarMonthLabel}
+        </span>
+
+        <button
+          type="button"
+          onClick={calendarGoNextMonth}
+          aria-label="Next month"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            border: "none",
+            background: "transparent",
+            color: "var(--foreground)",
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
+            fontSize: 16,
+          }}
+        >
+          ›
+        </button>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          marginBottom: 4,
+        }}
+      >
+        {CALENDAR_WEEKDAYS.map((day) => (
+          <div
+            key={day}
             style={{
-              margin: 0,
-              fontSize: 14,
-              color:
-                "var(--input-placeholder)",
+              textAlign: "center",
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--input-placeholder)",
+              letterSpacing: "0.4px",
+              padding: "4px 0",
             }}
           >
-            This is the Calendar page —
-            content coming soon.
-          </p>
-        )}
+            {day}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {calendarWeeks.map((week, weekIndex) => (
+          <div
+            key={weekIndex}
+            style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}
+          >
+            {week.map((day) => {
+              const inCurrentMonth = day.getMonth() === calendarVisibleMonth.getMonth();
+              const isSelected = isSameDay(day, calendarSelectedDate);
+              const isToday = isSameDay(day, today);
+              const hasEvents = (SAMPLE_CALENDAR_EVENTS[toDateKey(day)] ?? []).length > 0;
+
+              return (
+                <button
+                  key={day.toISOString()}
+                  type="button"
+                  onClick={() => setCalendarSelectedDate(day)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    padding: "5px 0",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 3,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 30,
+                      height: 30,
+                      display: "grid",
+                      placeItems: "center",
+                      borderRadius: "50%",
+                      fontSize: 13,
+                      fontWeight: isSelected || isToday ? 700 : 500,
+                      color: isSelected
+                        ? "#ffffff"
+                        : inCurrentMonth
+                          ? "var(--foreground)"
+                          : "var(--input-placeholder)",
+                      background: isSelected
+                        ? "linear-gradient(135deg, #7c6cff, #9b8cff)"
+                        : isToday
+                          ? "rgba(124,108,255,0.15)"
+                          : "transparent",
+                    }}
+                  >
+                    {day.getDate()}
+                  </span>
+                  <span
+                    style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: "50%",
+                      background: hasEvents
+                        ? isSelected
+                          ? "#ffffff"
+                          : "#7c6cff"
+                        : "transparent",
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Selected date detail */}
+    <div
+      style={{
+        borderTop: "1px solid var(--toggle-border)",
+        paddingTop: 14,
+      }}
+    >
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--foreground)" }}>
+        {calendarSelectedLabel}
+      </div>
+
+      {calendarSelectedEvents.length === 0 ? (
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--input-placeholder)",
+            marginTop: 4,
+          }}
+        >
+          No events
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+          {calendarSelectedEvents.map((event) => (
+            <div
+              key={event.title}
+              style={{
+                border: "1px solid var(--toggle-border)",
+                borderRadius: 10,
+                padding: "10px 12px",
+                background: "var(--toggle-bg)",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--foreground)" }}>
+                {event.title}
+              </div>
+              {event.time && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--input-placeholder)",
+                    marginTop: 2,
+                  }}
+                >
+                  {event.time}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
         {/* ====================================================
             FILE
