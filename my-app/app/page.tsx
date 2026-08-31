@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 import { ThemeToggle } from "../src/components/theme-toggle";
-import { Sidebar } from "../src/components/sidebar";
+import {
+  Sidebar,
+  SIDEBAR_COLLAPSED_WIDTH,
+  SIDEBAR_EXPANDED_WIDTH,
+} from "../src/components/sidebar";
 
 import {
   SettingsPanel,
@@ -52,8 +56,6 @@ const PAGE_TITLES: Record<Exclude<ActivePage, null>, string> = {
   reminder: "Reminder",
 };
 
-const SIDEBAR_WIDTH = 240;
-
 // ------------------------------------------------------------
 // HOME
 // ------------------------------------------------------------
@@ -64,6 +66,10 @@ export default function Home() {
   // ----------------------------------------------------------
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const sidebarWidth = isSidebarOpen
+    ? SIDEBAR_EXPANDED_WIDTH
+    : SIDEBAR_COLLAPSED_WIDTH;
 
   // ----------------------------------------------------------
   // ACTIVE SIDEBAR PAGE (E-Mail / Calendar / Reminder)
@@ -112,11 +118,9 @@ export default function Home() {
 
   const [isLiveMode, setIsLiveMode] = useState(false);
 
-  const [showLiveModeMessage, setShowLiveModeMessage] =
-    useState(false);
+  const [showLiveModeMessage, setShowLiveModeMessage] = useState(false);
 
-  const liveModeMessageTimerRef =
-    useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveModeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ----------------------------------------------------------
   // ORB ANIMATION
@@ -124,8 +128,7 @@ export default function Home() {
 
   const [isOrbAnimated, setIsOrbAnimated] = useState(false);
 
-  const orbPlaceholderRef =
-    useRef<HTMLDivElement | null>(null);
+  const orbPlaceholderRef = useRef<HTMLDivElement | null>(null);
 
   const [orbBasePos, setOrbBasePos] = useState({
     top: 0,
@@ -167,8 +170,7 @@ export default function Home() {
   // MINI ORB POSITION
   // ----------------------------------------------------------
 
-  const miniLeft =
-    viewportWidth - orbSize - MINI_ORB_RIGHT_MARGIN;
+  const miniLeft = viewportWidth - orbSize - MINI_ORB_RIGHT_MARGIN;
 
   // ----------------------------------------------------------
   // TOGGLE ORB ANIMATION
@@ -187,27 +189,20 @@ export default function Home() {
       return;
     }
 
-    // Enable Live Mode
     setIsLiveMode(true);
-
-    // Orb enters listening state
     setState("listening");
 
-    // Clear previous message timer
     if (liveModeMessageTimerRef.current !== null) {
       clearTimeout(liveModeMessageTimerRef.current);
     }
 
-    // Show "Live Mode Starts"
     setShowLiveModeMessage(true);
 
-    // Hide message after 3 seconds
     liveModeMessageTimerRef.current = setTimeout(() => {
       setShowLiveModeMessage(false);
       liveModeMessageTimerRef.current = null;
     }, 3000);
 
-    // Start microphone/live mode
     leoInputRef.current?.startLiveMode();
   };
 
@@ -216,7 +211,6 @@ export default function Home() {
   // ----------------------------------------------------------
 
   const handleOrbClick = () => {
-    // Do nothing if already in Live Mode
     if (isLiveMode) {
       return;
     }
@@ -229,22 +223,16 @@ export default function Home() {
   // ----------------------------------------------------------
 
   const exitLiveMode = () => {
-    // Stop microphone/listening
     leoInputRef.current?.stopListening();
 
-    // Disable Live Mode
     setIsLiveMode(false);
-
-    // Hide message
     setShowLiveModeMessage(false);
 
-    // Clear timer
     if (liveModeMessageTimerRef.current !== null) {
       clearTimeout(liveModeMessageTimerRef.current);
       liveModeMessageTimerRef.current = null;
     }
 
-    // Return orb to idle
     setState("idle");
   };
 
@@ -258,11 +246,8 @@ export default function Home() {
       return;
     }
 
-    // Mic stopped
     setState("idle");
 
-    // If microphone stopped while in Live Mode,
-    // exit Live Mode as well.
     if (isLiveMode) {
       setIsLiveMode(false);
       setShowLiveModeMessage(false);
@@ -319,17 +304,14 @@ export default function Home() {
           display: "flex",
           alignItems: "center",
           paddingLeft: 14,
-          gap: 10,
+          gap: 4,
           zIndex: 60,
           WebkitAppRegion: "drag",
         } as CSSProperties}
       >
-        {/* ==================================================
-            SIDEBAR
-            ================================================== */}
-
         <Sidebar
           open={isSidebarOpen}
+          onOpen={() => setIsSidebarOpen(true)}
           onClose={() => {
             setIsSidebarOpen(false);
             setActivePage(null);
@@ -342,54 +324,13 @@ export default function Home() {
               setIsSettingsOpen(true);
             } else if (key === "chat") {
               setActivePage(null);
-              setIsSidebarOpen(false);
+              setIsSidebarOpen(true);
             } else {
               setActivePage(key as ActivePage);
-              // Sidebar stays open/pinned so the page shows beside it
+              setIsSidebarOpen(true);
             }
           }}
         />
-
-        {/* ==================================================
-            SIDEBAR BUTTON
-            ================================================== */}
-
-        <button
-          type="button"
-          onClick={() => setIsSidebarOpen(true)}
-          aria-label="Open sidebar"
-          style={{
-            display: "grid",
-            placeItems: "center",
-            width: 22,
-            height: 22,
-            border: "none",
-            background: "transparent",
-            color: "var(--foreground)",
-            cursor: "pointer",
-            padding: 0,
-            WebkitAppRegion: "no-drag",
-          } as CSSProperties}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M4 6h16M4 12h16M4 18h16"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
-
-        {/* ==================================================
-            LEO TITLE
-            ================================================== */}
 
         <span
           style={{
@@ -430,14 +371,15 @@ export default function Home() {
 
       {/* ======================================================
           SIDEBAR PAGE (E-Mail / Calendar / Reminder)
-          Fills everything to the right of the pinned sidebar.
+          Fills everything to the right of the sidebar,
+          tracking its current width (collapsed or expanded).
           ====================================================== */}
 
       <div
         style={{
           position: "fixed",
           top: 0,
-          left: SIDEBAR_WIDTH,
+          left: sidebarWidth,
           right: 0,
           height: "100%",
           background: "var(--background)",
@@ -451,7 +393,7 @@ export default function Home() {
           opacity: activePage ? 1 : 0,
           pointerEvents: activePage ? "auto" : "none",
           transition:
-            "opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)",
+            "opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), left 0.28s cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
         <div
@@ -518,44 +460,22 @@ export default function Home() {
       <div
         style={{
           position: "fixed",
-
-          top: isOrbAnimated
-            ? MINI_ORB_TOP
-            : orbBasePos.top,
-
-          left: isOrbAnimated
-            ? miniLeft
-            : orbBasePos.left,
-
+          top: isOrbAnimated ? MINI_ORB_TOP : orbBasePos.top,
+          left: isOrbAnimated ? miniLeft : orbBasePos.left,
           width: orbSize,
           height: orbSize,
-
           display: "grid",
           placeItems: "center",
-
           transformOrigin: "top right",
-
-          transform: isOrbAnimated
-            ? `scale(${MINI_ORB_SCALE})`
-            : "scale(1)",
-
+          transform: isOrbAnimated ? `scale(${MINI_ORB_SCALE})` : "scale(1)",
           transition:
             "top 2.6s cubic-bezier(0.22, 1, 0.36, 1), " +
             "left 2.6s cubic-bezier(0.22, 1, 0.36, 1), " +
             "transform 2.6s cubic-bezier(0.22, 1, 0.36, 1)",
-
           zIndex: 45,
         }}
       >
-        {/* ==================================================
-            PARTICLES ORB
-            ================================================== */}
-
-        <div
-          style={{
-            pointerEvents: "none",
-          }}
-        >
+        <div style={{ pointerEvents: "none" }}>
           <ParticlesOrb
             state={state}
             size={orbSize}
@@ -566,24 +486,13 @@ export default function Home() {
           />
         </div>
 
-        {/* ==================================================
-            ORB CLICK AREA
-            ================================================== */}
-
         <div
           onClick={handleOrbClick}
           role="button"
           tabIndex={0}
-          aria-label={
-            isLiveMode
-              ? "Live mode active"
-              : "Start live mode"
-          }
+          aria-label={isLiveMode ? "Live mode active" : "Start live mode"}
           onKeyDown={(event) => {
-            if (
-              event.key === "Enter" ||
-              event.key === " "
-            ) {
+            if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               handleOrbClick();
             }
@@ -593,9 +502,7 @@ export default function Home() {
             width: orbClickDiameter,
             height: orbClickDiameter,
             borderRadius: "50%",
-            cursor: isLiveMode
-              ? "default"
-              : "pointer",
+            cursor: isLiveMode ? "default" : "pointer",
             zIndex: 10,
           }}
         />
@@ -613,10 +520,6 @@ export default function Home() {
           gap: 32,
         }}
       >
-        {/* ==================================================
-            INVISIBLE ORB PLACEHOLDER
-            ================================================== */}
-
         <div
           ref={orbPlaceholderRef}
           style={{
@@ -624,10 +527,6 @@ export default function Home() {
             height: orbSize,
           }}
         />
-
-        {/* ==================================================
-            STATE CONTROLS
-            ================================================== */}
 
         <div
           style={{
@@ -637,62 +536,36 @@ export default function Home() {
             justifyContent: "center",
           }}
         >
-          <button
-            type="button"
-            onClick={() => setState("idle")}
-          >
+          <button type="button" onClick={() => setState("idle")}>
             Idle
           </button>
 
-          <button
-            type="button"
-            onClick={() => setState("connecting")}
-          >
+          <button type="button" onClick={() => setState("connecting")}>
             Connecting
           </button>
 
-          <button
-            type="button"
-            onClick={() => setState("listening")}
-          >
+          <button type="button" onClick={() => setState("listening")}>
             Listening
           </button>
 
-          <button
-            type="button"
-            onClick={() => setState("thinking")}
-          >
+          <button type="button" onClick={() => setState("thinking")}>
             Thinking
           </button>
 
-          <button
-            type="button"
-            onClick={() => setState("speaking")}
-          >
+          <button type="button" onClick={() => setState("speaking")}>
             Speaking
           </button>
 
-          <button
-            type="button"
-            onClick={() => setState("error")}
-          >
+          <button type="button" onClick={() => setState("error")}>
             Error
           </button>
 
-          <button
-            type="button"
-            onClick={() => setState("disabled")}
-          >
+          <button type="button" onClick={() => setState("disabled")}>
             Disabled
           </button>
 
-          <button
-            type="button"
-            onClick={toggleOrbAnimation}
-          >
-            {isOrbAnimated
-              ? "Restore Orb"
-              : "Animate"}
+          <button type="button" onClick={toggleOrbAnimation}>
+            {isOrbAnimated ? "Restore Orb" : "Animate"}
           </button>
         </div>
       </div>
@@ -705,43 +578,24 @@ export default function Home() {
         aria-live="polite"
         style={{
           position: "fixed",
-
-          /*
-           * STATIC POSITION.
-           * This does not move with the orb.
-           */
           top: "calc(50% - 280px)",
           left: "50%",
-
           transform: showLiveModeMessage
             ? "translateX(-50%) translateY(0)"
             : "translateX(-50%) translateY(-8px)",
-
           padding: "8px 16px",
-
           borderRadius: 18,
-
           background: "var(--toggle-bg)",
           border: "1px solid var(--toggle-border)",
           color: "var(--foreground)",
-
           fontSize: 14,
           fontWeight: 500,
           letterSpacing: "0.2px",
-
           whiteSpace: "nowrap",
-
           opacity: showLiveModeMessage ? 1 : 0,
-
           pointerEvents: "none",
-
-          boxShadow:
-            "0 8px 24px rgba(0, 0, 0, 0.18)",
-
-          transition:
-            "opacity 0.35s ease, " +
-            "transform 0.35s ease",
-
+          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.18)",
+          transition: "opacity 0.35s ease, transform 0.35s ease",
           zIndex: 1000,
         }}
       >
@@ -774,86 +628,43 @@ export default function Home() {
             height: 76,
           }}
         >
-          {/* ==================================================
-              NORMAL TEXT FIELD
-              ================================================== */}
-
           <div
             style={{
               position: "absolute",
               inset: 0,
-
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-
               opacity: isLiveMode ? 0 : 1,
-
-              transform: isLiveMode
-                ? "translateY(24px) scale(0.96)"
-                : "translateY(0) scale(1)",
-
-              pointerEvents: isLiveMode
-                ? "none"
-                : "auto",
-
-              transition:
-                "opacity 0.35s ease, " +
-                "transform 0.35s ease",
+              transform: isLiveMode ? "translateY(24px) scale(0.96)" : "translateY(0) scale(1)",
+              pointerEvents: isLiveMode ? "none" : "auto",
+              transition: "opacity 0.35s ease, transform 0.35s ease",
             }}
           >
             <LeoInputBar
               ref={leoInputRef}
-              onSend={async (
-                message,
-                attachedFiles
-              ) => {
-                console.log(
-                  "message:",
-                  message
-                );
-
-                console.log(
-                  "files:",
-                  attachedFiles
-                );
+              onSend={async (message, attachedFiles) => {
+                console.log("message:", message);
+                console.log("files:", attachedFiles);
               }}
               onAttach={(attachedFiles) => {
-                console.log(
-                  "attached:",
-                  attachedFiles
-                );
+                console.log("attached:", attachedFiles);
               }}
               onMicClick={handleMicClick}
             />
           </div>
 
-          {/* ==================================================
-              LIVE MODE X BUTTON
-              ================================================== */}
-
           <div
             style={{
               position: "absolute",
               inset: 0,
-
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-
               opacity: isLiveMode ? 1 : 0,
-
-              transform: isLiveMode
-                ? "translateY(0) scale(1)"
-                : "translateY(24px) scale(0.9)",
-
-              pointerEvents: isLiveMode
-                ? "auto"
-                : "none",
-
-              transition:
-                "opacity 0.35s ease, " +
-                "transform 0.35s ease",
+              transform: isLiveMode ? "translateY(0) scale(1)" : "translateY(24px) scale(0.9)",
+              pointerEvents: isLiveMode ? "auto" : "none",
+              transition: "opacity 0.35s ease, transform 0.35s ease",
             }}
           >
             <button
@@ -864,66 +675,29 @@ export default function Home() {
               style={{
                 width: 48,
                 height: 48,
-
                 borderRadius: "50%",
-
-                border:
-                  "1px solid var(--toggle-border)",
-
-                background:
-                  "var(--toggle-bg)",
-
+                border: "1px solid var(--toggle-border)",
+                background: "var(--toggle-bg)",
                 color: "var(--foreground)",
-
                 display: "grid",
                 placeItems: "center",
-
                 cursor: "pointer",
-
-                boxShadow:
-                  "0 8px 24px rgba(0,0,0,0.25)",
-
+                boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
                 padding: 0,
-
-                transition:
-                  "background 0.2s ease, " +
-                  "transform 0.2s ease",
+                transition: "background 0.2s ease, transform 0.2s ease",
               }}
               onMouseEnter={(event) => {
-                event.currentTarget.style.background =
-                  "var(--toggle-hover)";
-
-                event.currentTarget.style.transform =
-                  "scale(1.08)";
+                event.currentTarget.style.background = "var(--toggle-hover)";
+                event.currentTarget.style.transform = "scale(1.08)";
               }}
               onMouseLeave={(event) => {
-                event.currentTarget.style.background =
-                  "var(--toggle-bg)";
-
-                event.currentTarget.style.transform =
-                  "scale(1)";
+                event.currentTarget.style.background = "var(--toggle-bg)";
+                event.currentTarget.style.transform = "scale(1)";
               }}
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M6 6L18 18"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-
-                <path
-                  d="M18 6L6 18"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
           </div>
