@@ -12,12 +12,6 @@ import {
 } from "../src/components/sidebar";
 
 import {
-  SettingsPanel,
-  SIZE_PRESETS,
-  type SizeKey,
-} from "../src/components/settings-panel";
-
-import {
   LeoInputBar,
   type LeoInputBarHandle,
 } from "../src/components/leo-input-bar";
@@ -42,32 +36,21 @@ type ActivePage =
   | "email"
   | "calendar"
   | "file"
-  | "settings"
-  | "orbCustomization"
   | null;
 
 // ============================================================
 // PAGE TITLES
 // ============================================================
 
-const PAGE_TITLES: Record<Exclude<ActivePage, null>, string> = {
+const PAGE_TITLES: Record<
+  Exclude<ActivePage, null>,
+  string
+> = {
   task: "Task",
   email: "E-Mail",
   calendar: "Calendar",
   file: "File",
-  settings: "Settings",
-  orbCustomization: "Orb Customization",
 };
-
-const ORB_PRESET_COLORS = [
-  "#4EA7FF",
-  "#9B4DFF",
-  "#00C8B7",
-  "#FF6818",
-  "#D943D9",
-  "#4DB8FF",
-  "#C5D0DF",
-];
 
 // ============================================================
 // TASK DATA
@@ -105,6 +88,1250 @@ const SAMPLE_TASKS = [
       "Test task created by Leo's GoogleTasksTool.",
   },
 ];
+
+const PRESET_COLORS = [
+  "#4EA7FF",
+  "#9B4DFF",
+  "#00C8B7",
+  "#FF6818",
+  "#D943D9",
+  "#4DB8FF",
+  "#C5D0DF",
+];
+
+const SIZE_PRESETS = {
+  SM: 260,
+  MD: 420,
+  LG: 560,
+} as const;
+
+type SizeKey = keyof typeof SIZE_PRESETS;
+
+interface SettingsPanelProps {
+  open: boolean;
+  onClose: () => void;
+
+  colorFrom: string;
+  colorTo: string;
+
+  onColorFromChange: (color: string) => void;
+  onColorToChange: (color: string) => void;
+
+  sizeKey: SizeKey;
+  onSizeChange: (size: SizeKey) => void;
+}
+
+type SettingsView = "settings" | "orb-customization";
+
+export const SettingsPanel = ({
+  open,
+  onClose,
+  colorFrom,
+  colorTo,
+  onColorFromChange,
+  onColorToChange,
+  sizeKey,
+  onSizeChange,
+}: SettingsPanelProps) => {
+  const panelRef =
+    useRef<HTMLDivElement>(null);
+
+  const [view, setView] =
+    useState<SettingsView>("settings");
+
+  const [isGoogleConnected, setIsGoogleConnected] =
+    useState(false);
+
+  // ============================================================
+  // ESCAPE KEY
+  // ============================================================
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKey = (
+      event: KeyboardEvent
+    ) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener(
+      "keydown",
+      handleKey
+    );
+
+    return () => {
+      document.removeEventListener(
+        "keydown",
+        handleKey
+      );
+    };
+  }, [open, onClose]);
+
+  // ============================================================
+  // RESET TO SETTINGS WHEN CLOSED
+  // ============================================================
+
+  useEffect(() => {
+    if (!open) {
+      setView("settings");
+    }
+  }, [open]);
+
+  // ============================================================
+  // GOOGLE
+  // ============================================================
+
+  const handleGoogleConnect = () => {
+    /*
+     * UI-only for now.
+     *
+     * Replace this with your actual Google OAuth
+     * connection logic when the backend is ready.
+     */
+
+    setIsGoogleConnected(
+      (current) => !current
+    );
+  };
+
+  // ============================================================
+  // COLOR PICKER
+  // ============================================================
+
+  const handlePresetColor = (
+    color: string
+  ) => {
+    onColorFromChange(color);
+  };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+
+  return (
+    <>
+      {/* ========================================================
+          BACKDROP
+          ======================================================== */}
+
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          background:
+            "rgba(0, 0, 0, 0.45)",
+
+          opacity: open ? 1 : 0,
+
+          pointerEvents: open
+            ? "auto"
+            : "none",
+
+          transition:
+            "opacity 0.3s ease",
+
+          zIndex: 70,
+        }}
+      />
+
+      {/* ========================================================
+          SETTINGS DRAWER
+          ======================================================== */}
+
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-label="Settings"
+        aria-hidden={!open}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+
+          height: "100%",
+
+          width: 320,
+
+          background:
+            "var(--toggle-bg)",
+
+          borderRight:
+            "1px solid var(--toggle-border)",
+
+          boxShadow:
+            "8px 0 32px rgba(0, 0, 0, 0.35)",
+
+          transform: open
+            ? "translateX(0)"
+            : "translateX(-100%)",
+
+          transition:
+            "transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)",
+
+          zIndex: 80,
+
+          display: "flex",
+          flexDirection: "column",
+
+          padding:
+            "44px 18px 20px",
+
+          boxSizing:
+            "border-box",
+
+          overflowY: "auto",
+        }}
+      >
+        {/* ======================================================
+            SETTINGS MAIN PAGE
+            ====================================================== */}
+
+        {view === "settings" && (
+          <>
+            {/* ==================================================
+                HEADER
+                ================================================== */}
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 18,
+              }}
+            >
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Back to sidebar"
+                style={{
+                  display: "grid",
+                  placeItems: "center",
+
+                  width: 28,
+                  height: 28,
+
+                  borderRadius: 8,
+                  border: "none",
+
+                  background:
+                    "transparent",
+
+                  color:
+                    "var(--input-icon)",
+
+                  cursor:
+                    "pointer",
+
+                  flexShrink: 0,
+
+                  padding: 0,
+                }}
+                onMouseEnter={(
+                  event
+                ) => {
+                  event.currentTarget.style.background =
+                    "var(--toggle-hover)";
+                }}
+                onMouseLeave={(
+                  event
+                ) => {
+                  event.currentTarget.style.background =
+                    "transparent";
+                }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M15 6l-6 6 6 6"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <div>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 650,
+                    lineHeight: 1.2,
+                    color:
+                      "var(--foreground)",
+                  }}
+                >
+                  Settings
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 3,
+                    fontSize: 11,
+                    color:
+                      "var(--input-placeholder)",
+                  }}
+                >
+                  Integrations & connected accounts
+                </div>
+              </div>
+            </div>
+
+            {/* ==================================================
+                GOOGLE CARD
+                ================================================== */}
+
+            <div
+              style={{
+                width: "100%",
+
+                minHeight: 132,
+
+                border:
+                  "1px solid var(--toggle-border)",
+
+                borderRadius: 12,
+
+                background:
+                  "var(--background)",
+
+                padding:
+                  "17px 16px 15px",
+
+                boxSizing:
+                  "border-box",
+
+                display: "flex",
+                flexDirection:
+                  "column",
+
+                justifyContent:
+                  "space-between",
+
+                marginBottom: 10,
+              }}
+            >
+              {/* GOOGLE TOP */}
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems:
+                    "flex-start",
+                  justifyContent:
+                    "space-between",
+
+                  width: "100%",
+                }}
+              >
+                {/* LEFT */}
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems:
+                      "center",
+                    gap: 11,
+                    minWidth: 0,
+                  }}
+                >
+                  {/* GOOGLE ICON */}
+
+                  <div
+                    style={{
+                      width: 30,
+                      height: 30,
+
+                      display: "grid",
+                      placeItems:
+                        "center",
+
+                      color:
+                        "#9b87ff",
+
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg
+                      width="30"
+                      height="30"
+                      viewBox="0 0 36 36"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <rect
+                        x="4"
+                        y="7"
+                        width="28"
+                        height="22"
+                        rx="3"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      />
+
+                      <path
+                        d="M5.5 9L18 18.5L30.5 9"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+
+                  {/* GOOGLE TEXT */}
+
+                  <div
+                    style={{
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 15,
+                        lineHeight: 1.2,
+                        fontWeight: 650,
+                        color:
+                          "var(--foreground)",
+                      }}
+                    >
+                      Google
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 3,
+                        fontSize: 11,
+                        lineHeight: 1.3,
+                        color:
+                          "var(--input-placeholder)",
+                      }}
+                    >
+                      Gmail, Calendar & Tasks
+                    </div>
+                  </div>
+                </div>
+
+                {/* STATUS */}
+
+                <div
+                  style={{
+                    paddingTop: 5,
+
+                    fontSize: 11,
+
+                    lineHeight: 1.2,
+
+                    fontWeight: 600,
+
+                    color:
+                      isGoogleConnected
+                        ? "#34a853"
+                        : "var(--input-placeholder)",
+
+                    whiteSpace:
+                      "nowrap",
+
+                    marginLeft: 8,
+                  }}
+                >
+                  {isGoogleConnected
+                    ? "Connected"
+                    : "Not connected"}
+                </div>
+              </div>
+
+              {/* CONNECT BUTTON */}
+
+              <button
+                type="button"
+                onClick={
+                  handleGoogleConnect
+                }
+                style={{
+                  marginTop: 12,
+
+                  width: 150,
+                  height: 38,
+
+                  padding:
+                    "0 14px",
+
+                  border: "none",
+
+                  borderRadius: 8,
+
+                  background:
+                    isGoogleConnected
+                      ? "var(--toggle-hover)"
+                      : "#8b78f6",
+
+                  color:
+                    isGoogleConnected
+                      ? "var(--foreground)"
+                      : "#ffffff",
+
+                  fontSize: 12,
+
+                  fontWeight: 650,
+
+                  cursor:
+                    "pointer",
+
+                  transition:
+                    "transform 0.15s ease, background 0.15s ease",
+
+                  alignSelf:
+                    "flex-start",
+                }}
+                onMouseEnter={(
+                  event
+                ) => {
+                  event.currentTarget.style.transform =
+                    "translateY(-1px)";
+                }}
+                onMouseLeave={(
+                  event
+                ) => {
+                  event.currentTarget.style.transform =
+                    "translateY(0)";
+                }}
+              >
+                {isGoogleConnected
+                  ? "Disconnect Google"
+                  : "Connect Google"}
+              </button>
+            </div>
+
+            {/* ==================================================
+                ORB CUSTOMIZATION CARD
+                ================================================== */}
+
+            <button
+              type="button"
+              onClick={() =>
+                setView(
+                  "orb-customization"
+                )
+              }
+              style={{
+                width: "100%",
+
+                minHeight: 64,
+
+                display: "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "space-between",
+
+                padding:
+                  "12px 14px",
+
+                boxSizing:
+                  "border-box",
+
+                border:
+                  "1px solid var(--toggle-border)",
+
+                borderRadius: 12,
+
+                background:
+                  "var(--background)",
+
+                color:
+                  "var(--foreground)",
+
+                cursor:
+                  "pointer",
+
+                textAlign: "left",
+
+                transition:
+                  "background 0.18s ease, transform 0.18s ease",
+
+                marginBottom: 4,
+              }}
+              onMouseEnter={(
+                event
+              ) => {
+                event.currentTarget.style.background =
+                  "var(--toggle-hover)";
+
+                event.currentTarget.style.transform =
+                  "translateY(-1px)";
+              }}
+              onMouseLeave={(
+                event
+              ) => {
+                event.currentTarget.style.background =
+                  "var(--background)";
+
+                event.currentTarget.style.transform =
+                  "translateY(0)";
+              }}
+            >
+              {/* LEFT */}
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems:
+                    "center",
+                  gap: 11,
+
+                  minWidth: 0,
+                }}
+              >
+                {/* ORB ICON */}
+
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+
+                    borderRadius:
+                      "50%",
+
+                    background:
+                      `linear-gradient(135deg, ${colorFrom}, ${colorTo})`,
+
+                    boxShadow:
+                      `0 0 14px ${colorTo}44`,
+
+                    flexShrink: 0,
+                  }}
+                />
+
+                {/* TEXT */}
+
+                <div
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 650,
+                      lineHeight: 1.25,
+
+                      color:
+                        "var(--foreground)",
+                    }}
+                  >
+                    Orb Customization
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 2,
+                      fontSize: 10,
+                      lineHeight: 1.3,
+
+                      color:
+                        "var(--input-placeholder)",
+                    }}
+                  >
+                    Customize orb colors and size
+                  </div>
+                </div>
+              </div>
+
+              {/* ARROW */}
+
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+                style={{
+                  flexShrink: 0,
+
+                  color:
+                    "var(--input-placeholder)",
+                }}
+              >
+                <path
+                  d="M9 6l6 6-6 6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </>
+        )}
+
+        {/* ======================================================
+            ORB CUSTOMIZATION PAGE
+            ====================================================== */}
+
+        {view ===
+          "orb-customization" && (
+          <>
+            {/* ==================================================
+                HEADER
+                ================================================== */}
+
+            <div
+              style={{
+                display: "flex",
+                alignItems:
+                  "center",
+                gap: 8,
+
+                marginBottom: 18,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setView(
+                    "settings"
+                  )
+                }
+                aria-label="Back to settings"
+                style={{
+                  display: "grid",
+                  placeItems:
+                    "center",
+
+                  width: 28,
+                  height: 28,
+
+                  borderRadius: 8,
+
+                  border: "none",
+
+                  background:
+                    "transparent",
+
+                  color:
+                    "var(--input-icon)",
+
+                  cursor:
+                    "pointer",
+
+                  flexShrink: 0,
+
+                  padding: 0,
+                }}
+                onMouseEnter={(
+                  event
+                ) => {
+                  event.currentTarget.style.background =
+                    "var(--toggle-hover)";
+                }}
+                onMouseLeave={(
+                  event
+                ) => {
+                  event.currentTarget.style.background =
+                    "transparent";
+                }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M15 6l-6 6 6 6"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <div>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 650,
+                    lineHeight: 1.2,
+
+                    color:
+                      "var(--foreground)",
+                  }}
+                >
+                  Orb Customization
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 3,
+                    fontSize: 10,
+                    color:
+                      "var(--input-placeholder)",
+                  }}
+                >
+                  Customize the appearance of your Leo orb
+                </div>
+              </div>
+            </div>
+
+            {/* ==================================================
+                COLOR SECTION
+                ================================================== */}
+
+            <div
+              style={{
+                width: "100%",
+
+                border:
+                  "1px solid var(--toggle-border)",
+
+                borderRadius: 11,
+
+                background:
+                  "var(--background)",
+
+                padding:
+                  "15px 14px",
+
+                boxSizing:
+                  "border-box",
+
+                marginBottom: 10,
+              }}
+            >
+              {/* TITLE */}
+
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 650,
+
+                  color:
+                    "var(--foreground)",
+
+                  marginBottom: 4,
+                }}
+              >
+                Color
+              </div>
+
+              <div
+                style={{
+                  fontSize: 10,
+                  lineHeight: 1.4,
+
+                  color:
+                    "var(--input-placeholder)",
+
+                  marginBottom: 13,
+                }}
+              >
+                Choose the colors used by the Leo orb.
+              </div>
+
+              {/* ==================================================
+                  PRESET COLORS
+                  ================================================== */}
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems:
+                    "center",
+
+                  gap: 8,
+
+                  flexWrap:
+                    "wrap",
+
+                  marginBottom: 14,
+                }}
+              >
+                {PRESET_COLORS.map(
+                  (color) => {
+                    const isSelected =
+                      colorFrom.toLowerCase() ===
+                      color.toLowerCase();
+
+                    return (
+                      <button
+                        key={color}
+                        type="button"
+                        title={`Use ${color}`}
+                        onClick={() =>
+                          handlePresetColor(
+                            color
+                          )
+                        }
+                        style={{
+                          width: 21,
+                          height: 21,
+
+                          minWidth: 21,
+
+                          padding: 0,
+
+                          border: "none",
+
+                          borderRadius:
+                            "50%",
+
+                          backgroundColor:
+                            color,
+
+                          cursor:
+                            "pointer",
+
+                          boxShadow:
+                            isSelected
+                              ? "0 0 0 2px var(--foreground)"
+                              : "none",
+
+                          transition:
+                            "transform 0.15s ease, box-shadow 0.15s ease",
+                        }}
+                        onMouseEnter={(
+                          event
+                        ) => {
+                          event.currentTarget.style.transform =
+                            "scale(1.15)";
+                        }}
+                        onMouseLeave={(
+                          event
+                        ) => {
+                          event.currentTarget.style.transform =
+                            "scale(1)";
+                        }}
+                      />
+                    );
+                  }
+                )}
+              </div>
+
+              {/* ==================================================
+                  FROM / TO
+                  ================================================== */}
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems:
+                    "center",
+
+                  gap: 20,
+
+                  flexWrap:
+                    "wrap",
+                }}
+              >
+                {/* FROM */}
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems:
+                      "center",
+
+                    gap: 7,
+
+                    cursor:
+                      "pointer",
+
+                    userSelect:
+                      "none",
+                  }}
+                >
+                  <input
+                    type="color"
+                    value={colorFrom}
+                    onChange={(
+                      event
+                    ) =>
+                      onColorFromChange(
+                        event.target.value
+                      )
+                    }
+                    style={{
+                      position:
+                        "absolute",
+
+                      width: 1,
+                      height: 1,
+
+                      opacity: 0,
+
+                      pointerEvents:
+                        "none",
+                    }}
+                  />
+
+                  <span
+                    title="Choose From color"
+                    style={{
+                      width: 30,
+                      height: 22,
+
+                      borderRadius: 3,
+
+                      backgroundColor:
+                        colorFrom,
+
+                      display:
+                        "block",
+
+                      cursor:
+                        "pointer",
+
+                      border:
+                        "1px solid rgba(127, 127, 127, 0.25)",
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      fontSize: 11,
+
+                      color:
+                        "var(--foreground)",
+
+                      fontWeight: 500,
+                    }}
+                  >
+                    From
+                  </span>
+                </label>
+
+                {/* TO */}
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems:
+                      "center",
+
+                    gap: 7,
+
+                    cursor:
+                      "pointer",
+
+                    userSelect:
+                      "none",
+                  }}
+                >
+                  <input
+                    type="color"
+                    value={colorTo}
+                    onChange={(
+                      event
+                    ) =>
+                      onColorToChange(
+                        event.target.value
+                      )
+                    }
+                    style={{
+                      position:
+                        "absolute",
+
+                      width: 1,
+                      height: 1,
+
+                      opacity: 0,
+
+                      pointerEvents:
+                        "none",
+                    }}
+                  />
+
+                  <span
+                    title="Choose To color"
+                    style={{
+                      width: 30,
+                      height: 22,
+
+                      borderRadius: 3,
+
+                      backgroundColor:
+                        colorTo,
+
+                      display:
+                        "block",
+
+                      cursor:
+                        "pointer",
+
+                      border:
+                        "1px solid rgba(127, 127, 127, 0.25)",
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      fontSize: 11,
+
+                      color:
+                        "var(--foreground)",
+
+                      fontWeight: 500,
+                    }}
+                  >
+                    To
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* ==================================================
+                SIZE SECTION
+                ================================================== */}
+
+            <div
+              style={{
+                width: "100%",
+
+                border:
+                  "1px solid var(--toggle-border)",
+
+                borderRadius: 11,
+
+                background:
+                  "var(--background)",
+
+                padding:
+                  "15px 14px",
+
+                boxSizing:
+                  "border-box",
+              }}
+            >
+              {/* TITLE */}
+
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 650,
+
+                  color:
+                    "var(--foreground)",
+
+                  marginBottom: 4,
+                }}
+              >
+                Size
+              </div>
+
+              <div
+                style={{
+                  fontSize: 10,
+                  lineHeight: 1.4,
+
+                  color:
+                    "var(--input-placeholder)",
+
+                  marginBottom: 13,
+                }}
+              >
+                Choose the size of the Leo orb.
+              </div>
+
+              {/* SIZE BUTTONS */}
+
+              <div
+                style={{
+                  display:
+                    "inline-flex",
+
+                  alignItems:
+                    "center",
+
+                  gap: 2,
+
+                  padding: 3,
+
+                  borderRadius: 8,
+
+                  border:
+                    "1px solid var(--toggle-border)",
+
+                  backgroundColor:
+                    "var(--background)",
+
+                  width:
+                    "fit-content",
+                }}
+              >
+                {(
+                  Object.keys(
+                    SIZE_PRESETS
+                  ) as SizeKey[]
+                ).map((key) => {
+                  const isSelected =
+                    sizeKey === key;
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      title={`${key} (${SIZE_PRESETS[key]}px)`}
+                      onClick={() =>
+                        onSizeChange(
+                          key
+                        )
+                      }
+                      style={{
+                        padding:
+                          "6px 15px",
+
+                        fontSize: 11,
+
+                        fontWeight: 550,
+
+                        border: "none",
+
+                        borderRadius: 6,
+
+                        cursor:
+                          "pointer",
+
+                        color:
+                          isSelected
+                            ? "#ffffff"
+                            : "var(--foreground)",
+
+                        backgroundColor:
+                          isSelected
+                            ? "#3f5efb"
+                            : "transparent",
+
+                        transition:
+                          "background-color 0.15s ease, color 0.15s ease",
+                      }}
+                    >
+                      {key}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+};
 
 // ============================================================
 // EMAIL DATA

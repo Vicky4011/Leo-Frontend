@@ -11,15 +11,6 @@ const PRESET_COLORS = [
   "#4DB8FF",
   "#C5D0DF",
 ];
-const ORB_PRESET_COLORS = [
-  "#4EA7FF",
-  "#9B4DFF",
-  "#00C8B7",
-  "#FF6818",
-  "#D943D9",
-  "#4DB8FF",
-  "#C5D0DF",
-];
 
 export const SIZE_PRESETS = {
   SM: 260,
