@@ -48,12 +48,13 @@ const MINI_ORB_SCALE = 0.55;
 // SIDEBAR PAGES
 // ------------------------------------------------------------
 
-type ActivePage = "email" | "calendar" | "reminder" | null;
+type ActivePage = "task" | "email" | "calendar" | "file" | null;
 
 const PAGE_TITLES: Record<Exclude<ActivePage, null>, string> = {
+  task: "Task",
   email: "E-Mail",
   calendar: "Calendar",
-  reminder: "Reminder",
+  file: "File",
 };
 
 // ------------------------------------------------------------
@@ -72,7 +73,7 @@ export default function Home() {
     : SIDEBAR_COLLAPSED_WIDTH;
 
   // ----------------------------------------------------------
-  // ACTIVE SIDEBAR PAGE (E-Mail / Calendar / Reminder)
+  // ACTIVE SIDEBAR PAGE (Task / E-Mail / Calendar / File)
   // ----------------------------------------------------------
 
   const [activePage, setActivePage] = useState<ActivePage>(null);
@@ -370,7 +371,7 @@ export default function Home() {
       />
 
       {/* ======================================================
-          SIDEBAR PAGE (E-Mail / Calendar / Reminder)
+          SIDEBAR PAGE (File / E-Mail / Calendar / Task)
           Fills everything to the right of the sidebar,
           tracking its current width (collapsed or expanded).
           ====================================================== */}
