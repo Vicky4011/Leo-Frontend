@@ -57,6 +57,53 @@ const PAGE_TITLES: Record<Exclude<ActivePage, null>, string> = {
   file: "File",
 };
 
+const PAGE_SUBTITLES: Partial<Record<Exclude<ActivePage, null>, string>> = {
+  task: "Your Google Tasks",
+};
+
+const SAMPLE_TASKS = [
+  {
+    title: "Leo Phase 3.5 Pipeline Test",
+    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Tasks Test",
+    description: "Test task created by Leo's GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Pipeline Test",
+    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Tasks Test",
+    description: "Test task created by Leo's GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Pipeline Test",
+    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Tasks Test",
+    description: "Test task created by Leo's GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Pipeline Test",
+    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Tasks Test",
+    description: "Test task created by Leo's GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Pipeline Test",
+    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
+  },
+  {
+    title: "Leo Phase 3.5 Tasks Test",
+    description: "Test task created by Leo's GoogleTasksTool.",
+  },
+];
+
 // ------------------------------------------------------------
 // HOME
 // ------------------------------------------------------------
@@ -371,23 +418,24 @@ export default function Home() {
       />
 
       {/* ======================================================
-          SIDEBAR PAGE (File / E-Mail / Calendar / Task)
+          SIDEBAR PAGE (Task / E-Mail / Calendar / File)
           Fills everything to the right of the sidebar,
-          tracking its current width (collapsed or expanded).
+          BELOW the top bar (not behind it), tracking the
+          sidebar's current width (collapsed or expanded).
           ====================================================== */}
 
       <div
         style={{
           position: "fixed",
-          top: 0,
+          top: 32,
           left: sidebarWidth,
           right: 0,
-          height: "100%",
+          height: "calc(100% - 32px)",
           background: "var(--background)",
           zIndex: 75,
           display: "flex",
           flexDirection: "column",
-          padding: "48px 28px 28px",
+          padding: "24px 28px 28px",
           boxSizing: "border-box",
           overflowY: "auto",
           transform: activePage ? "translateX(0)" : "translateX(24px)",
@@ -400,11 +448,37 @@ export default function Home() {
         <div
           style={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
             gap: 12,
-            marginBottom: 24,
+            marginBottom: 20,
           }}
         >
+          <div>
+            <h2
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: "var(--foreground)",
+                margin: 0,
+              }}
+            >
+              {activePage ? PAGE_TITLES[activePage] : ""}
+            </h2>
+
+            {activePage && PAGE_SUBTITLES[activePage] && (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--input-placeholder)",
+                  margin: "4px 0 0",
+                }}
+              >
+                {PAGE_SUBTITLES[activePage]}
+              </p>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={() => setActivePage(null)}
@@ -419,6 +493,7 @@ export default function Home() {
               background: "var(--toggle-bg)",
               color: "var(--foreground)",
               cursor: "pointer",
+              flexShrink: 0,
             }}
             onMouseEnter={(event) => {
               event.currentTarget.style.background = "var(--toggle-hover)";
@@ -436,22 +511,47 @@ export default function Home() {
               />
             </svg>
           </button>
-
-          <h2
-            style={{
-              fontSize: 18,
-              fontWeight: 600,
-              color: "var(--foreground)",
-              margin: 0,
-            }}
-          >
-            {activePage ? PAGE_TITLES[activePage] : ""}
-          </h2>
         </div>
 
-        <p style={{ color: "var(--input-placeholder)", fontSize: 14, margin: 0 }}>
-          This is the {activePage ? PAGE_TITLES[activePage] : ""} page — content coming soon.
-        </p>
+        {activePage === "task" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {SAMPLE_TASKS.map((task) => (
+              <div
+                key={task.title}
+                style={{
+                  border: "1px solid var(--toggle-border)",
+                  borderRadius: 12,
+                  padding: "14px 16px",
+                  background: "var(--toggle-bg)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "var(--foreground)",
+                  }}
+                >
+                  {task.title}
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "var(--input-placeholder)",
+                    marginTop: 4,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {task.description}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: "var(--input-placeholder)", fontSize: 14, margin: 0 }}>
+            This is the {activePage ? PAGE_TITLES[activePage] : ""} page — content coming soon.
+          </p>
+        )}
       </div>
 
       {/* ======================================================
