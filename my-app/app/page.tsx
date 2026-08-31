@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 
 import { ThemeToggle } from "../src/components/theme-toggle";
+
 import {
   Sidebar,
   SIDEBAR_COLLAPSED_WIDTH,
@@ -23,9 +24,9 @@ import {
 
 import { ParticlesOrb } from "../src/registry/orbe/particles-orb/particles-orb";
 
-// ------------------------------------------------------------
-// ORB STATE
-// ------------------------------------------------------------
+// ============================================================
+// TYPES
+// ============================================================
 
 type OrbState =
   | "idle"
@@ -36,165 +37,254 @@ type OrbState =
   | "error"
   | "disabled";
 
-// ------------------------------------------------------------
-// MINI ORB SETTINGS
-// ------------------------------------------------------------
+type ActivePage =
+  | "task"
+  | "email"
+  | "calendar"
+  | "file"
+  | null;
 
-const MINI_ORB_TOP = 72;
-const MINI_ORB_RIGHT_MARGIN = 16;
-const MINI_ORB_SCALE = 0.55;
+// ============================================================
+// PAGE TITLES
+// ============================================================
 
-// ------------------------------------------------------------
-// SIDEBAR PAGES
-// ------------------------------------------------------------
-
-type ActivePage = "task" | "email" | "calendar" | "file" | null;
-
-const PAGE_TITLES: Record<Exclude<ActivePage, null>, string> = {
+const PAGE_TITLES: Record<
+  Exclude<ActivePage, null>,
+  string
+> = {
   task: "Task",
   email: "E-Mail",
   calendar: "Calendar",
   file: "File",
 };
 
-const PAGE_SUBTITLES: Partial<Record<Exclude<ActivePage, null>, string>> = {
-  task: "Your Google Tasks",
-};
+// ============================================================
+// TASK DATA
+// ============================================================
 
 const SAMPLE_TASKS = [
   {
     title: "Leo Phase 3.5 Pipeline Test",
-    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
+    description:
+      "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
   },
   {
     title: "Leo Phase 3.5 Tasks Test",
-    description: "Test task created by Leo's GoogleTasksTool.",
+    description:
+      "Test task created by Leo's GoogleTasksTool.",
   },
   {
     title: "Leo Phase 3.5 Pipeline Test",
-    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
+    description:
+      "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
   },
   {
     title: "Leo Phase 3.5 Tasks Test",
-    description: "Test task created by Leo's GoogleTasksTool.",
+    description:
+      "Test task created by Leo's GoogleTasksTool.",
   },
   {
     title: "Leo Phase 3.5 Pipeline Test",
-    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
+    description:
+      "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
   },
   {
     title: "Leo Phase 3.5 Tasks Test",
-    description: "Test task created by Leo's GoogleTasksTool.",
-  },
-  {
-    title: "Leo Phase 3.5 Pipeline Test",
-    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
-  },
-  {
-    title: "Leo Phase 3.5 Tasks Test",
-    description: "Test task created by Leo's GoogleTasksTool.",
-  },
-  {
-    title: "Leo Phase 3.5 Pipeline Test",
-    description: "Created through Leo ChatService, ApprovalManager, ToolPipeline, and GoogleTasksTool.",
-  },
-  {
-    title: "Leo Phase 3.5 Tasks Test",
-    description: "Test task created by Leo's GoogleTasksTool.",
+    description:
+      "Test task created by Leo's GoogleTasksTool.",
   },
 ];
 
-// ------------------------------------------------------------
-// HOME
-// ------------------------------------------------------------
+// ============================================================
+// EMAIL DATA
+// ============================================================
+
+const SAMPLE_EMAILS = [
+  {
+    id: 1,
+    source: "Glassdoor Jobs",
+    sender: "Glassdoor Jobs",
+    subject:
+      "AI Engineer at tayana academy and 10 more jobs in Remote, India for you. Apply Now.",
+    preview:
+      "Displaysamp; Beyond is hiring. Explore exciting opportunities and apply for jobs matching your profile.",
+    time: "18:08",
+    unread: true,
+    important: true,
+  },
+  {
+    id: 2,
+    source: '"FlyRank Team" via FlyRank...',
+    sender: "LinkedIn & CV Audit",
+    subject:
+      "Internship | CV Audit | Cooldown Period Restarted",
+    preview:
+      "Hello everyone, the cooldown period for the LinkedIn and CV Audit has now been restarted.",
+    time: "16:36",
+    unread: true,
+    important: true,
+  },
+  {
+    id: 3,
+    source: "LinkedIn",
+    sender: "LinkedIn",
+    subject:
+      "You have new opportunities waiting for you",
+    preview:
+      "Explore new jobs, connections and updates based on your recent activity.",
+    time: "14:22",
+    unread: true,
+    important: false,
+  },
+  {
+    id: 4,
+    source: "Google",
+    sender: "Google",
+    subject: "Security alert",
+    preview:
+      "Review recent security activity and make sure your Google account is protected.",
+    time: "12:45",
+    unread: false,
+    important: true,
+  },
+  {
+    id: 5,
+    source: "Glassdoor Jobs",
+    sender: "Glassdoor Jobs",
+    subject:
+      "New jobs matching your preferences",
+    preview:
+      "We found new opportunities that match your job search preferences.",
+    time: "11:18",
+    unread: false,
+    important: false,
+  },
+  {
+    id: 6,
+    source: "LinkedIn",
+    sender: "LinkedIn",
+    subject:
+      "Your weekly job recommendations",
+    preview:
+      "Here are some new positions that may be a good fit for your profile.",
+    time: "09:42",
+    unread: false,
+    important: false,
+  },
+];
+
+// ============================================================
+// MAIN
+// ============================================================
 
 export default function Home() {
-  // ----------------------------------------------------------
+  // ==========================================================
+  // ORB
+  // ==========================================================
+
+  const [state, setState] =
+    useState<OrbState>("idle");
+
+  const [colorFrom, setColorFrom] =
+    useState("#f0abfc");
+
+  const [colorTo, setColorTo] =
+    useState("#818cf8");
+
+  const [sizeKey, setSizeKey] =
+    useState<SizeKey>("MD");
+
+  const orbSize =
+    SIZE_PRESETS[sizeKey];
+
+  const orbClickDiameter =
+    Math.round(orbSize * 0.68);
+
+  // ==========================================================
   // SIDEBAR
-  // ----------------------------------------------------------
+  // ==========================================================
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] =
+    useState(false);
 
-  const sidebarWidth = isSidebarOpen
-    ? SIDEBAR_EXPANDED_WIDTH
-    : SIDEBAR_COLLAPSED_WIDTH;
+  const [activePage, setActivePage] =
+    useState<ActivePage>(null);
 
-  // ----------------------------------------------------------
-  // ACTIVE SIDEBAR PAGE (Task / E-Mail / Calendar / File)
-  // ----------------------------------------------------------
+  const sidebarWidth =
+    isSidebarOpen
+      ? SIDEBAR_EXPANDED_WIDTH
+      : SIDEBAR_COLLAPSED_WIDTH;
 
-  const [activePage, setActivePage] = useState<ActivePage>(null);
-
-  // ----------------------------------------------------------
+  // ==========================================================
   // SETTINGS
-  // ----------------------------------------------------------
+  // ==========================================================
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] =
+    useState(false);
 
-  // ----------------------------------------------------------
-  // ORB STATE
-  // ----------------------------------------------------------
+  // ==========================================================
+  // GOOGLE CONNECTION
+  //
+  // IMPORTANT:
+  //
+  // This is the state that should eventually be
+  // connected to your Google OAuth/API status.
+  //
+  // true  = Google Connected
+  // false = Google Not Connected
+  // ==========================================================
 
-  const [state, setState] = useState<OrbState>("idle");
+  const [isGoogleConnected, setIsGoogleConnected] =
+    useState(false);
 
-  // ----------------------------------------------------------
-  // ORB COLORS
-  // ----------------------------------------------------------
-
-  const [colorFrom, setColorFrom] = useState("#f0abfc");
-  const [colorTo, setColorTo] = useState("#818cf8");
-
-  // ----------------------------------------------------------
-  // ORB SIZE
-  // ----------------------------------------------------------
-
-  const [sizeKey, setSizeKey] = useState<SizeKey>("MD");
-
-  const orbSize = SIZE_PRESETS[sizeKey];
-
-  const orbClickDiameter = Math.round(orbSize * 0.68);
-
-  // ----------------------------------------------------------
-  // LEO INPUT BAR
-  // ----------------------------------------------------------
-
-  const leoInputRef = useRef<LeoInputBarHandle | null>(null);
-
-  // ----------------------------------------------------------
+  // ==========================================================
   // LIVE MODE
-  // ----------------------------------------------------------
+  // ==========================================================
 
-  const [isLiveMode, setIsLiveMode] = useState(false);
+  const [isLiveMode, setIsLiveMode] =
+    useState(false);
 
-  const [showLiveModeMessage, setShowLiveModeMessage] = useState(false);
+  const [showLiveModeMessage, setShowLiveModeMessage] =
+    useState(false);
 
-  const liveModeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveModeTimer =
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
 
-  // ----------------------------------------------------------
-  // ORB ANIMATION
-  // ----------------------------------------------------------
+  const leoInputRef =
+    useRef<LeoInputBarHandle>(null);
 
-  const [isOrbAnimated, setIsOrbAnimated] = useState(false);
+  // ==========================================================
+  // ORB POSITION
+  // ==========================================================
 
-  const orbPlaceholderRef = useRef<HTMLDivElement | null>(null);
+  const orbPlaceholderRef =
+    useRef<HTMLDivElement | null>(null);
 
   const [orbBasePos, setOrbBasePos] = useState({
     top: 0,
     left: 0,
   });
 
-  const [viewportWidth, setViewportWidth] = useState(0);
+  const [viewportWidth, setViewportWidth] =
+    useState(0);
 
-  // ----------------------------------------------------------
-  // MEASURE ORB POSITION
-  // ----------------------------------------------------------
+  const [isOrbAnimated, setIsOrbAnimated] =
+    useState(false);
+
+  // ==========================================================
+  // MEASURE ORB
+  // ==========================================================
 
   useEffect(() => {
     const measure = () => {
-      const element = orbPlaceholderRef.current;
+      const element =
+        orbPlaceholderRef.current;
 
       if (element) {
-        const rect = element.getBoundingClientRect();
+        const rect =
+          element.getBoundingClientRect();
 
         setOrbBasePos({
           top: rect.top,
@@ -202,35 +292,42 @@ export default function Home() {
         });
       }
 
-      setViewportWidth(window.innerWidth);
+      setViewportWidth(
+        window.innerWidth
+      );
     };
 
     measure();
 
-    window.addEventListener("resize", measure);
+    window.addEventListener(
+      "resize",
+      measure
+    );
 
     return () => {
-      window.removeEventListener("resize", measure);
+      window.removeEventListener(
+        "resize",
+        measure
+      );
     };
   }, [orbSize]);
 
-  // ----------------------------------------------------------
-  // MINI ORB POSITION
-  // ----------------------------------------------------------
+  // ==========================================================
+  // MINI ORB
+  // ==========================================================
 
-  const miniLeft = viewportWidth - orbSize - MINI_ORB_RIGHT_MARGIN;
+  const miniOrbTop = 72;
+  const miniOrbRight = 16;
+  const miniOrbScale = 0.55;
 
-  // ----------------------------------------------------------
-  // TOGGLE ORB ANIMATION
-  // ----------------------------------------------------------
+  const miniOrbLeft =
+    viewportWidth -
+    orbSize -
+    miniOrbRight;
 
-  const toggleOrbAnimation = () => {
-    setIsOrbAnimated((previous) => !previous);
-  };
-
-  // ----------------------------------------------------------
-  // START LIVE MODE
-  // ----------------------------------------------------------
+  // ==========================================================
+  // LIVE MODE
+  // ==========================================================
 
   const startLiveMode = () => {
     if (isLiveMode) {
@@ -238,25 +335,24 @@ export default function Home() {
     }
 
     setIsLiveMode(true);
-    setState("listening");
 
-    if (liveModeMessageTimerRef.current !== null) {
-      clearTimeout(liveModeMessageTimerRef.current);
-    }
+    setState("listening");
 
     setShowLiveModeMessage(true);
 
-    liveModeMessageTimerRef.current = setTimeout(() => {
-      setShowLiveModeMessage(false);
-      liveModeMessageTimerRef.current = null;
-    }, 3000);
+    if (liveModeTimer.current) {
+      clearTimeout(
+        liveModeTimer.current
+      );
+    }
 
-    leoInputRef.current?.startLiveMode();
+    liveModeTimer.current =
+      setTimeout(() => {
+        setShowLiveModeMessage(false);
+      }, 3000);
+
+    leoInputRef.current?.startListening();
   };
-
-  // ----------------------------------------------------------
-  // ORB CLICK
-  // ----------------------------------------------------------
 
   const handleOrbClick = () => {
     if (isLiveMode) {
@@ -266,62 +362,119 @@ export default function Home() {
     startLiveMode();
   };
 
-  // ----------------------------------------------------------
-  // EXIT LIVE MODE
-  // ----------------------------------------------------------
-
   const exitLiveMode = () => {
     leoInputRef.current?.stopListening();
 
     setIsLiveMode(false);
+
+    setState("idle");
+
     setShowLiveModeMessage(false);
 
-    if (liveModeMessageTimerRef.current !== null) {
-      clearTimeout(liveModeMessageTimerRef.current);
-      liveModeMessageTimerRef.current = null;
-    }
+    if (liveModeTimer.current) {
+      clearTimeout(
+        liveModeTimer.current
+      );
 
-    setState("idle");
+      liveModeTimer.current = null;
+    }
   };
 
-  // ----------------------------------------------------------
-  // MICROPHONE CALLBACK
-  // ----------------------------------------------------------
-
-  const handleMicClick = (listening: boolean) => {
+  const handleMicClick = (
+    listening: boolean
+  ) => {
     if (listening) {
       setState("listening");
-      return;
-    }
-
-    setState("idle");
-
-    if (isLiveMode) {
-      setIsLiveMode(false);
-      setShowLiveModeMessage(false);
-
-      if (liveModeMessageTimerRef.current !== null) {
-        clearTimeout(liveModeMessageTimerRef.current);
-        liveModeMessageTimerRef.current = null;
-      }
+    } else {
+      setState("idle");
     }
   };
 
-  // ----------------------------------------------------------
+  // ==========================================================
   // CLEANUP
-  // ----------------------------------------------------------
+  // ==========================================================
 
   useEffect(() => {
     return () => {
-      if (liveModeMessageTimerRef.current !== null) {
-        clearTimeout(liveModeMessageTimerRef.current);
+      if (liveModeTimer.current) {
+        clearTimeout(
+          liveModeTimer.current
+        );
       }
     };
   }, []);
 
-  // ----------------------------------------------------------
-  // PAGE
-  // ----------------------------------------------------------
+  // ==========================================================
+  // CARD HOVER
+  //
+  // SAME EFFECT FOR:
+  // E-MAIL CARDS
+  // TASK CARDS
+  // ==========================================================
+
+  const handleCardMouseEnter = (
+    event: MouseEvent<HTMLDivElement>
+  ) => {
+    event.currentTarget.style.background =
+      "var(--toggle-hover)";
+
+    event.currentTarget.style.transform =
+      "translateY(-1px)";
+
+    event.currentTarget.style.boxShadow =
+      "0 5px 16px rgba(0, 0, 0, 0.08)";
+  };
+
+  const handleCardMouseLeave = (
+    event: MouseEvent<HTMLDivElement>
+  ) => {
+    event.currentTarget.style.background =
+      "var(--toggle-bg)";
+
+    event.currentTarget.style.transform =
+      "translateY(0)";
+
+    event.currentTarget.style.boxShadow =
+      "none";
+  };
+
+  // ==========================================================
+  // NAVIGATION
+  // ==========================================================
+
+  const handleNavigation = (
+    key: string
+  ) => {
+    if (key === "settings") {
+      setIsSettingsOpen(true);
+      setIsSidebarOpen(false);
+      setActivePage(null);
+      return;
+    }
+
+    if (key === "chat") {
+      setActivePage(null);
+      setIsSidebarOpen(true);
+      return;
+    }
+
+    if (
+      key === "task" ||
+      key === "email" ||
+      key === "calendar" ||
+      key === "file"
+    ) {
+      setActivePage(
+        key as ActivePage
+      );
+
+      setIsSidebarOpen(true);
+    }
+  };
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <main
@@ -332,14 +485,37 @@ export default function Home() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "var(--background)",
-        color: "var(--foreground)",
+        background:
+          "var(--background)",
+        color:
+          "var(--foreground)",
         position: "relative",
         overflow: "hidden",
       }}
     >
       {/* ======================================================
-          TOP BAR
+          SIDEBAR
+          ====================================================== */}
+
+      <Sidebar
+        open={isSidebarOpen}
+        onOpen={() =>
+          setIsSidebarOpen(true)
+        }
+        onClose={() => {
+          setIsSidebarOpen(false);
+          setActivePage(null);
+        }}
+        hideBackdrop={
+          activePage !== null
+        }
+        onNavigate={
+          handleNavigation
+        }
+      />
+
+      {/* ======================================================
+          TOP TITLE
           ====================================================== */}
 
       <div
@@ -352,41 +528,18 @@ export default function Home() {
           display: "flex",
           alignItems: "center",
           paddingLeft: 14,
-          gap: 4,
           zIndex: 60,
-          WebkitAppRegion: "drag",
-        } as CSSProperties}
+          pointerEvents: "none",
+        }}
       >
-        <Sidebar
-          open={isSidebarOpen}
-          onOpen={() => setIsSidebarOpen(true)}
-          onClose={() => {
-            setIsSidebarOpen(false);
-            setActivePage(null);
-          }}
-          hideBackdrop={activePage !== null}
-          onNavigate={(key) => {
-            if (key === "settings") {
-              setIsSidebarOpen(false);
-              setActivePage(null);
-              setIsSettingsOpen(true);
-            } else if (key === "chat") {
-              setActivePage(null);
-              setIsSidebarOpen(true);
-            } else {
-              setActivePage(key as ActivePage);
-              setIsSidebarOpen(true);
-            }
-          }}
-        />
-
         <span
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: "var(--foreground)",
-            letterSpacing: "0.3px",
-            userSelect: "none",
+            color:
+              "var(--foreground)",
+            letterSpacing:
+              "0.3px",
           }}
         >
           Leo
@@ -394,7 +547,7 @@ export default function Home() {
       </div>
 
       {/* ======================================================
-          THEME TOGGLE
+          THEME
           ====================================================== */}
 
       <ThemeToggle />
@@ -411,17 +564,20 @@ export default function Home() {
         }}
         colorFrom={colorFrom}
         colorTo={colorTo}
-        onColorFromChange={setColorFrom}
-        onColorToChange={setColorTo}
+        onColorFromChange={
+          setColorFrom
+        }
+        onColorToChange={
+          setColorTo
+        }
         sizeKey={sizeKey}
-        onSizeChange={setSizeKey}
+        onSizeChange={
+          setSizeKey
+        }
       />
 
       {/* ======================================================
-          SIDEBAR PAGE (Task / E-Mail / Calendar / File)
-          Fills everything to the right of the sidebar,
-          BELOW the top bar (not behind it), tracking the
-          sidebar's current width (collapsed or expanded).
+          PAGE PANEL
           ====================================================== */}
 
       <div
@@ -430,81 +586,191 @@ export default function Home() {
           top: 32,
           left: sidebarWidth,
           right: 0,
-          height: "calc(100% - 32px)",
-          background: "var(--background)",
+          bottom: 0,
+          background:
+            "var(--background)",
           zIndex: 75,
           display: "flex",
           flexDirection: "column",
-          padding: "24px 28px 28px",
-          boxSizing: "border-box",
+          padding:
+            "24px 28px 28px",
+          boxSizing:
+            "border-box",
           overflowY: "auto",
-          transform: activePage ? "translateX(0)" : "translateX(24px)",
-          opacity: activePage ? 1 : 0,
-          pointerEvents: activePage ? "auto" : "none",
+          opacity:
+            activePage ? 1 : 0,
+          transform:
+            activePage
+              ? "translateX(0)"
+              : "translateX(24px)",
+          pointerEvents:
+            activePage
+              ? "auto"
+              : "none",
           transition:
-            "opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), left 0.28s cubic-bezier(0.22, 1, 0.36, 1)",
+            "opacity 0.28s ease, transform 0.28s ease, left 0.28s ease",
         }}
       >
+        {/* ====================================================
+            PAGE HEADER
+            ==================================================== */}
+
         <div
           style={{
             display: "flex",
             alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 20,
+            justifyContent:
+              "space-between",
+            marginBottom:
+              activePage === "email"
+                ? 18
+                : 20,
           }}
         >
           <div>
             <h2
               style={{
-                fontSize: 20,
-                fontWeight: 700,
-                color: "var(--foreground)",
                 margin: 0,
+                fontSize:
+                  activePage === "email"
+                    ? 18
+                    : 20,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color:
+                  "var(--foreground)",
               }}
             >
-              {activePage ? PAGE_TITLES[activePage] : ""}
+              {activePage
+                ? PAGE_TITLES[
+                    activePage
+                  ]
+                : ""}
             </h2>
 
-            {activePage && PAGE_SUBTITLES[activePage] && (
+            {activePage ===
+              "task" && (
               <p
                 style={{
+                  margin:
+                    "4px 0 0",
                   fontSize: 13,
-                  color: "var(--input-placeholder)",
-                  margin: "4px 0 0",
+                  color:
+                    "var(--input-placeholder)",
                 }}
               >
-                {PAGE_SUBTITLES[activePage]}
+                Your Google Tasks
               </p>
             )}
           </div>
 
+          {/* ==================================================
+              GOOGLE CONNECTION STATUS
+
+              THIS IS NOW DYNAMIC
+              ================================================== */}
+
+          {activePage ===
+            "email" && (
+            <div
+              style={{
+                marginLeft: "auto",
+                display: "flex",
+                alignItems:
+                  "center",
+                gap: 6,
+                marginTop: 4,
+                marginRight: 8,
+                fontSize: 10,
+                color:
+                  "var(--input-placeholder)",
+                whiteSpace:
+                  "nowrap",
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius:
+                    "50%",
+                  display:
+                    "inline-block",
+                  flexShrink: 0,
+
+                  /*
+                   * GREEN when connected.
+                   * RED when not connected.
+                   */
+
+                  background:
+                    isGoogleConnected
+                      ? "#34a853"
+                      : "#ef4444",
+                }}
+              />
+
+              <span>
+                {isGoogleConnected
+                  ? "Google Connected"
+                  : "Google Not Connected"}
+              </span>
+            </div>
+          )}
+
+          {/* ==================================================
+              CLOSE PAGE
+              ================================================== */}
+
           <button
             type="button"
-            onClick={() => setActivePage(null)}
+            onClick={() =>
+              setActivePage(null)
+            }
             aria-label="Close page"
             style={{
-              display: "grid",
-              placeItems: "center",
               width: 32,
               height: 32,
+              display: "grid",
+              placeItems: "center",
               borderRadius: 8,
-              border: "1px solid var(--toggle-border)",
-              background: "var(--toggle-bg)",
-              color: "var(--foreground)",
+              border:
+                "1px solid var(--toggle-border)",
+              background:
+                "var(--toggle-bg)",
+              color:
+                "var(--foreground)",
               cursor: "pointer",
-              flexShrink: 0,
+              padding: 0,
             }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.background = "var(--toggle-hover)";
+            onMouseEnter={(
+              event
+            ) => {
+              event.currentTarget.style.background =
+                "var(--toggle-hover)";
             }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.background = "var(--toggle-bg)";
+            onMouseLeave={(
+              event
+            ) => {
+              event.currentTarget.style.background =
+                "var(--toggle-bg)";
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
               <path
-                d="M6 6l12 12M18 6L6 18"
+                d="M6 6L18 18"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+
+              <path
+                d="M18 6L6 18"
                 stroke="currentColor"
                 strokeWidth="1.8"
                 strokeLinecap="round"
@@ -513,70 +779,418 @@ export default function Home() {
           </button>
         </div>
 
-        {activePage === "task" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {SAMPLE_TASKS.map((task) => (
-              <div
-                key={task.title}
-                style={{
-                  border: "1px solid var(--toggle-border)",
-                  borderRadius: 12,
-                  padding: "14px 16px",
-                  background: "var(--toggle-bg)",
-                }}
-              >
+        {/* ====================================================
+            TASK PAGE
+            ==================================================== */}
+
+        {activePage === "task" && (
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 1000,
+              display: "flex",
+              flexDirection:
+                "column",
+              gap: 7,
+            }}
+          >
+            {SAMPLE_TASKS.map(
+              (task, index) => (
                 <div
+                  key={`${task.title}-${index}`}
+                  role="button"
+                  tabIndex={0}
                   style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: "var(--foreground)",
+                    width: "100%",
+                    minHeight: 68,
+                    padding:
+                      "14px 16px",
+                    boxSizing:
+                      "border-box",
+                    border:
+                      "1px solid var(--toggle-border)",
+                    borderRadius: 8,
+                    background:
+                      "var(--toggle-bg)",
+                    color:
+                      "var(--foreground)",
+                    cursor: "pointer",
+                    outline: "none",
+
+                    /*
+                     * SAME HOVER TRANSITION
+                     * AS EMAIL CARDS
+                     */
+
+                    transition:
+                      "background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease",
                   }}
+                  onMouseEnter={
+                    handleCardMouseEnter
+                  }
+                  onMouseLeave={
+                    handleCardMouseLeave
+                  }
                 >
-                  {task.title}
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      color:
+                        "var(--foreground)",
+                    }}
+                  >
+                    {task.title}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 4,
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      color:
+                        "var(--input-placeholder)",
+                    }}
+                  >
+                    {task.description}
+                  </div>
                 </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "var(--input-placeholder)",
-                    marginTop: 4,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {task.description}
-                </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
-        ) : (
-          <p style={{ color: "var(--input-placeholder)", fontSize: 14, margin: 0 }}>
-            This is the {activePage ? PAGE_TITLES[activePage] : ""} page — content coming soon.
+        )}
+
+        {/* ====================================================
+            EMAIL PAGE
+            ==================================================== */}
+
+        {activePage === "email" && (
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 1000,
+              display: "flex",
+              flexDirection:
+                "column",
+              gap: 7,
+            }}
+          >
+            {SAMPLE_EMAILS.map(
+              (email) => (
+                <div
+                  key={email.id}
+                  role="button"
+                  tabIndex={0}
+                  style={{
+                    width: "100%",
+                    minHeight: 68,
+
+                    /*
+                     * IMPORTANT:
+                     *
+                     * There is NO 8px unread-dot
+                     * column here.
+                     *
+                     * The card begins directly
+                     * with the sender.
+                     */
+
+                    display: "grid",
+                    gridTemplateColumns:
+                      "minmax(125px, 155px) minmax(0, 1fr)",
+
+                    alignItems: "center",
+                    gap: 10,
+                    padding:
+                      "10px 13px",
+                    boxSizing:
+                      "border-box",
+                    border:
+                      "1px solid var(--toggle-border)",
+                    borderRadius: 8,
+                    background:
+                      "var(--toggle-bg)",
+                    color:
+                      "var(--foreground)",
+                    cursor: "pointer",
+                    outline: "none",
+
+                    /*
+                     * SAME HOVER EFFECT
+                     * AS TASK CARDS
+                     */
+
+                    transition:
+                      "background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease",
+                  }}
+                  onMouseEnter={
+                    handleCardMouseEnter
+                  }
+                  onMouseLeave={
+                    handleCardMouseLeave
+                  }
+                >
+                  {/* ==========================================
+                      SENDER
+                      ========================================== */}
+
+                  <div
+                    style={{
+                      minWidth: 0,
+                      overflow:
+                        "hidden",
+                      whiteSpace:
+                        "nowrap",
+                      textOverflow:
+                        "ellipsis",
+                      fontSize: 11,
+                      fontWeight:
+                        email.unread
+                          ? 600
+                          : 500,
+                      color:
+                        "var(--foreground)",
+                    }}
+                    title={
+                      email.source
+                    }
+                  >
+                    {email.source}
+                  </div>
+
+                  {/* ==========================================
+                      EMAIL CONTENT
+                      ========================================== */}
+
+                  <div
+                    style={{
+                      minWidth: 0,
+                      display: "flex",
+                      flexDirection:
+                        "column",
+                      gap: 3,
+                    }}
+                  >
+                    {/* ========================================
+                        SUBJECT
+                        ======================================== */}
+
+                    <div
+                      style={{
+                        width:
+                          "100%",
+                        minWidth: 0,
+                        display:
+                          "flex",
+                        alignItems:
+                          "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span
+                        style={{
+                          minWidth: 0,
+                          flex: 1,
+                          overflow:
+                            "hidden",
+                          whiteSpace:
+                            "nowrap",
+                          textOverflow:
+                            "ellipsis",
+                          fontSize: 11,
+                          fontWeight:
+                            email.unread
+                              ? 600
+                              : 500,
+                          color:
+                            "var(--foreground)",
+                        }}
+                        title={
+                          email.subject
+                        }
+                      >
+                        {email.subject}
+                      </span>
+
+                      {/* ======================================
+                          IMPORTANT LABEL
+                          ====================================== */}
+
+                      {email.important && (
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            display:
+                              "inline-flex",
+                            alignItems:
+                              "center",
+                            justifyContent:
+                              "center",
+                            padding:
+                              "2px 7px",
+                            borderRadius:
+                              4,
+                            border:
+                              "1px solid rgba(34, 197, 94, 0.3)",
+                            background:
+                              "rgba(34, 197, 94, 0.12)",
+                            color:
+                              "#22c55e",
+                            fontSize: 8,
+                            fontWeight: 600,
+                            lineHeight:
+                              1.2,
+                            whiteSpace:
+                              "nowrap",
+                          }}
+                        >
+                          Important
+                        </span>
+                      )}
+
+                      {/* ======================================
+                          TIME
+                          ====================================== */}
+
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          fontSize: 9,
+                          color:
+                            "var(--input-placeholder)",
+                          whiteSpace:
+                            "nowrap",
+                        }}
+                      >
+                        {email.time}
+                      </span>
+                    </div>
+
+                    {/* ========================================
+                        PREVIEW
+                        ======================================== */}
+
+                    <div
+                      style={{
+                        minWidth: 0,
+                        overflow:
+                          "hidden",
+                        whiteSpace:
+                          "nowrap",
+                        textOverflow:
+                          "ellipsis",
+                        fontSize: 9,
+                        lineHeight:
+                          1.35,
+                        color:
+                          "var(--input-placeholder)",
+                      }}
+                      title={
+                        email.preview
+                      }
+                    >
+                      <span
+                        style={{
+                          color:
+                            "var(--foreground)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {email.sender}
+                      </span>
+
+                      <span
+                        style={{
+                          margin:
+                            "0 4px",
+                        }}
+                      >
+                        —
+                      </span>
+
+                      <span>
+                        {email.preview}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        )}
+
+        {/* ====================================================
+            CALENDAR
+            ==================================================== */}
+
+        {activePage ===
+          "calendar" && (
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              color:
+                "var(--input-placeholder)",
+            }}
+          >
+            This is the Calendar page —
+            content coming soon.
+          </p>
+        )}
+
+        {/* ====================================================
+            FILE
+            ==================================================== */}
+
+        {activePage === "file" && (
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              color:
+                "var(--input-placeholder)",
+            }}
+          >
+            This is the File page —
+            content coming soon.
           </p>
         )}
       </div>
 
       {/* ======================================================
-          FLOATING / ANIMATABLE ORB
+          ORB
           ====================================================== */}
 
       <div
         style={{
           position: "fixed",
-          top: isOrbAnimated ? MINI_ORB_TOP : orbBasePos.top,
-          left: isOrbAnimated ? miniLeft : orbBasePos.left,
+          top: isOrbAnimated
+            ? miniOrbTop
+            : orbBasePos.top,
+          left: isOrbAnimated
+            ? miniOrbLeft
+            : orbBasePos.left,
           width: orbSize,
           height: orbSize,
           display: "grid",
           placeItems: "center",
-          transformOrigin: "top right",
-          transform: isOrbAnimated ? `scale(${MINI_ORB_SCALE})` : "scale(1)",
+          transformOrigin:
+            "top right",
+          transform: isOrbAnimated
+            ? `scale(${miniOrbScale})`
+            : "scale(1)",
           transition:
-            "top 2.6s cubic-bezier(0.22, 1, 0.36, 1), " +
-            "left 2.6s cubic-bezier(0.22, 1, 0.36, 1), " +
-            "transform 2.6s cubic-bezier(0.22, 1, 0.36, 1)",
+            "top 2.6s cubic-bezier(0.22, 1, 0.36, 1), left 2.6s cubic-bezier(0.22, 1, 0.36, 1), transform 2.6s cubic-bezier(0.22, 1, 0.36, 1)",
           zIndex: 45,
         }}
       >
-        <div style={{ pointerEvents: "none" }}>
+        <div
+          style={{
+            pointerEvents:
+              "none",
+          }}
+        >
           <ParticlesOrb
             state={state}
             size={orbSize}
@@ -588,123 +1202,206 @@ export default function Home() {
         </div>
 
         <div
-          onClick={handleOrbClick}
+          onClick={
+            handleOrbClick
+          }
           role="button"
           tabIndex={0}
-          aria-label={isLiveMode ? "Live mode active" : "Start live mode"}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
+          aria-label={
+            isLiveMode
+              ? "Live mode active"
+              : "Start live mode"
+          }
+          onKeyDown={(
+            event
+          ) => {
+            if (
+              event.key ===
+                "Enter" ||
+              event.key === " "
+            ) {
               event.preventDefault();
               handleOrbClick();
             }
           }}
           style={{
-            position: "absolute",
-            width: orbClickDiameter,
-            height: orbClickDiameter,
-            borderRadius: "50%",
-            cursor: isLiveMode ? "default" : "pointer",
-            zIndex: 10,
+            position:
+              "absolute",
+            width:
+              orbClickDiameter,
+            height:
+              orbClickDiameter,
+            borderRadius:
+              "50%",
+            cursor:
+              isLiveMode
+                ? "default"
+                : "pointer",
           }}
         />
       </div>
 
       {/* ======================================================
-          MAIN COLUMN
+          ORB PLACEHOLDER
           ====================================================== */}
 
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
+          flexDirection:
+            "column",
           alignItems: "center",
           gap: 32,
         }}
       >
         <div
-          ref={orbPlaceholderRef}
+          ref={
+            orbPlaceholderRef
+          }
           style={{
             width: orbSize,
             height: orbSize,
           }}
         />
 
+        {/* ====================================================
+            STATE BUTTONS
+            ==================================================== */}
+
         <div
           style={{
             display: "flex",
             gap: 10,
             flexWrap: "wrap",
-            justifyContent: "center",
+            justifyContent:
+              "center",
           }}
         >
-          <button type="button" onClick={() => setState("idle")}>
+          <button
+            onClick={() =>
+              setState("idle")
+            }
+          >
             Idle
           </button>
 
-          <button type="button" onClick={() => setState("connecting")}>
+          <button
+            onClick={() =>
+              setState(
+                "connecting"
+              )
+            }
+          >
             Connecting
           </button>
 
-          <button type="button" onClick={() => setState("listening")}>
+          <button
+            onClick={() =>
+              setState(
+                "listening"
+              )
+            }
+          >
             Listening
           </button>
 
-          <button type="button" onClick={() => setState("thinking")}>
+          <button
+            onClick={() =>
+              setState(
+                "thinking"
+              )
+            }
+          >
             Thinking
           </button>
 
-          <button type="button" onClick={() => setState("speaking")}>
+          <button
+            onClick={() =>
+              setState(
+                "speaking"
+              )
+            }
+          >
             Speaking
           </button>
 
-          <button type="button" onClick={() => setState("error")}>
+          <button
+            onClick={() =>
+              setState("error")
+            }
+          >
             Error
           </button>
 
-          <button type="button" onClick={() => setState("disabled")}>
+          <button
+            onClick={() =>
+              setState(
+                "disabled"
+              )
+            }
+          >
             Disabled
           </button>
 
-          <button type="button" onClick={toggleOrbAnimation}>
-            {isOrbAnimated ? "Restore Orb" : "Animate"}
+          <button
+            onClick={() =>
+              setIsOrbAnimated(
+                (value) =>
+                  !value
+              )
+            }
+          >
+            {isOrbAnimated
+              ? "Restore Orb"
+              : "Animate"}
           </button>
         </div>
       </div>
 
       {/* ======================================================
-          STATIC LIVE MODE MESSAGE
+          LIVE MODE MESSAGE
           ====================================================== */}
 
       <div
         aria-live="polite"
         style={{
           position: "fixed",
-          top: "calc(50% - 280px)",
+          top:
+            "calc(50% - 280px)",
           left: "50%",
-          transform: showLiveModeMessage
-            ? "translateX(-50%) translateY(0)"
-            : "translateX(-50%) translateY(-8px)",
-          padding: "8px 16px",
+          transform:
+            showLiveModeMessage
+              ? "translateX(-50%) translateY(0)"
+              : "translateX(-50%) translateY(-8px)",
+          padding:
+            "8px 16px",
           borderRadius: 18,
-          background: "var(--toggle-bg)",
-          border: "1px solid var(--toggle-border)",
-          color: "var(--foreground)",
+          background:
+            "var(--toggle-bg)",
+          border:
+            "1px solid var(--toggle-border)",
+          color:
+            "var(--foreground)",
           fontSize: 14,
           fontWeight: 500,
-          letterSpacing: "0.2px",
-          whiteSpace: "nowrap",
-          opacity: showLiveModeMessage ? 1 : 0,
-          pointerEvents: "none",
-          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.18)",
-          transition: "opacity 0.35s ease, transform 0.35s ease",
+          opacity:
+            showLiveModeMessage
+              ? 1
+              : 0,
+          pointerEvents:
+            "none",
+          whiteSpace:
+            "nowrap",
           zIndex: 1000,
+          transition:
+            "opacity 0.35s ease, transform 0.35s ease",
         }}
       >
         Live Mode Starts
       </div>
 
       {/* ======================================================
-          BOTTOM INPUT AREA
+          BOTTOM INPUT
           ====================================================== */}
 
       <div
@@ -712,93 +1409,189 @@ export default function Home() {
           position: "fixed",
           bottom: 32,
           left: "50%",
-          transform: "translateX(-50%)",
+          transform:
+            "translateX(-50%)",
           width: "100%",
           display: "flex",
-          justifyContent: "center",
-          padding: "0 16px",
-          boxSizing: "border-box",
+          justifyContent:
+            "center",
+          padding:
+            "0 16px",
+          boxSizing:
+            "border-box",
           zIndex: 40,
         }}
       >
         <div
           style={{
-            position: "relative",
+            position:
+              "relative",
             width: "100%",
             maxWidth: 620,
             height: 76,
           }}
         >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              opacity: isLiveMode ? 0 : 1,
-              transform: isLiveMode ? "translateY(24px) scale(0.96)" : "translateY(0) scale(1)",
-              pointerEvents: isLiveMode ? "none" : "auto",
-              transition: "opacity 0.35s ease, transform 0.35s ease",
-            }}
-          >
-            <LeoInputBar
-              ref={leoInputRef}
-              onSend={async (message, attachedFiles) => {
-                console.log("message:", message);
-                console.log("files:", attachedFiles);
-              }}
-              onAttach={(attachedFiles) => {
-                console.log("attached:", attachedFiles);
-              }}
-              onMicClick={handleMicClick}
-            />
-          </div>
+          {/* ==================================================
+              NORMAL INPUT
+              ================================================== */}
 
           <div
             style={{
-              position: "absolute",
+              position:
+                "absolute",
               inset: 0,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              opacity: isLiveMode ? 1 : 0,
-              transform: isLiveMode ? "translateY(0) scale(1)" : "translateY(24px) scale(0.9)",
-              pointerEvents: isLiveMode ? "auto" : "none",
-              transition: "opacity 0.35s ease, transform 0.35s ease",
+              display:
+                "flex",
+              justifyContent:
+                "center",
+              alignItems:
+                "center",
+              opacity:
+                isLiveMode
+                  ? 0
+                  : 1,
+              transform:
+                isLiveMode
+                  ? "translateY(24px) scale(0.96)"
+                  : "translateY(0) scale(1)",
+              pointerEvents:
+                isLiveMode
+                  ? "none"
+                  : "auto",
+              transition:
+                "opacity 0.35s ease, transform 0.35s ease",
+            }}
+          >
+            <LeoInputBar
+              ref={
+                leoInputRef
+              }
+              onSend={async (
+                message,
+                files
+              ) => {
+                console.log(
+                  "message:",
+                  message
+                );
+
+                console.log(
+                  "files:",
+                  files
+                );
+              }}
+              onAttach={(
+                files
+              ) => {
+                console.log(
+                  "attached:",
+                  files
+                );
+              }}
+              onMicClick={
+                handleMicClick
+              }
+            />
+          </div>
+
+          {/* ==================================================
+              LIVE MODE EXIT
+              ================================================== */}
+
+          <div
+            style={{
+              position:
+                "absolute",
+              inset: 0,
+              display:
+                "flex",
+              justifyContent:
+                "center",
+              alignItems:
+                "center",
+              opacity:
+                isLiveMode
+                  ? 1
+                  : 0,
+              transform:
+                isLiveMode
+                  ? "translateY(0) scale(1)"
+                  : "translateY(24px) scale(0.9)",
+              pointerEvents:
+                isLiveMode
+                  ? "auto"
+                  : "none",
+              transition:
+                "opacity 0.35s ease, transform 0.35s ease",
             }}
           >
             <button
               type="button"
-              onClick={exitLiveMode}
+              onClick={
+                exitLiveMode
+              }
               aria-label="Exit live mode"
-              title="Exit live mode"
               style={{
                 width: 48,
                 height: 48,
-                borderRadius: "50%",
-                border: "1px solid var(--toggle-border)",
-                background: "var(--toggle-bg)",
-                color: "var(--foreground)",
-                display: "grid",
-                placeItems: "center",
-                cursor: "pointer",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+                borderRadius:
+                  "50%",
+                border:
+                  "1px solid var(--toggle-border)",
+                background:
+                  "var(--toggle-bg)",
+                color:
+                  "var(--foreground)",
+                display:
+                  "grid",
+                placeItems:
+                  "center",
+                cursor:
+                  "pointer",
                 padding: 0,
-                transition: "background 0.2s ease, transform 0.2s ease",
+                boxShadow:
+                  "0 8px 24px rgba(0,0,0,0.25)",
+                transition:
+                  "background 0.2s ease, transform 0.2s ease",
               }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.background = "var(--toggle-hover)";
-                event.currentTarget.style.transform = "scale(1.08)";
+              onMouseEnter={(
+                event
+              ) => {
+                event.currentTarget.style.background =
+                  "var(--toggle-hover)";
+
+                event.currentTarget.style.transform =
+                  "scale(1.08)";
               }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.background = "var(--toggle-bg)";
-                event.currentTarget.style.transform = "scale(1)";
+              onMouseLeave={(
+                event
+              ) => {
+                event.currentTarget.style.background =
+                  "var(--toggle-bg)";
+
+                event.currentTarget.style.transform =
+                  "scale(1)";
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="M6 6L18 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M18 6L6 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
           </div>
