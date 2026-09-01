@@ -1914,6 +1914,7 @@ const calendarSelectedEvents =
 
     if (key === "chat") {
       setActivePage(null);
+      setIsSettingsOpen(false);
       setIsSidebarOpen(true);
       return;
     }
