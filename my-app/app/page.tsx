@@ -298,68 +298,12 @@ export const SettingsPanel = ({
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 10,
+                alignItems: "flex-start",
+                justifyContent:
+                  "space-between",
                 marginBottom: 18,
               }}
             >
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Back to sidebar"
-                style={{
-                  display: "grid",
-                  placeItems: "center",
-
-                  width: 28,
-                  height: 28,
-
-                  borderRadius: 8,
-                  border: "none",
-
-                  background:
-                    "transparent",
-
-                  color:
-                    "var(--input-icon)",
-
-                  cursor:
-                    "pointer",
-
-                  flexShrink: 0,
-
-                  padding: 0,
-                }}
-                onMouseEnter={(
-                  event
-                ) => {
-                  event.currentTarget.style.background =
-                    "var(--toggle-hover)";
-                }}
-                onMouseLeave={(
-                  event
-                ) => {
-                  event.currentTarget.style.background =
-                    "transparent";
-                }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M15 6l-6 6 6 6"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-
               <div>
                 <div
                   style={{
@@ -384,6 +328,61 @@ export const SettingsPanel = ({
                   Integrations & connected accounts
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close settings"
+                style={{
+                  width: 32,
+                  height: 32,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: 8,
+                  border:
+                    "1px solid var(--toggle-border)",
+                  background:
+                    "var(--toggle-bg)",
+                  color:
+                    "var(--foreground)",
+                  cursor: "pointer",
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(
+                  event
+                ) => {
+                  event.currentTarget.style.background =
+                    "var(--toggle-hover)";
+                }}
+                onMouseLeave={(
+                  event
+                ) => {
+                  event.currentTarget.style.background =
+                    "var(--toggle-bg)";
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M6 6L18 18"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+
+                  <path
+                    d="M18 6L6 18"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
             </div>
 
             {/* ==================================================
