@@ -107,9 +107,23 @@ const SIZE_PRESETS = {
 
 type SizeKey = keyof typeof SIZE_PRESETS;
 
+const SIZE_LABELS: Record<SizeKey, string> = {
+  SM: "Small",
+  MD: "Medium",
+  LG: "Large",
+};
+
 interface SettingsPanelProps {
   open: boolean;
   onClose: () => void;
+
+  sidebarWidth: number;
+
+  view: SettingsView;
+  setView: (view: SettingsView) => void;
+
+  isGoogleConnected: boolean;
+  onGoogleConnectedChange: (connected: boolean) => void;
 
   colorFrom: string;
   colorTo: string;
@@ -126,6 +140,11 @@ type SettingsView = "settings" | "orb-customization";
 export const SettingsPanel = ({
   open,
   onClose,
+  sidebarWidth,
+  view,
+  setView,
+  isGoogleConnected,
+  onGoogleConnectedChange,
   colorFrom,
   colorTo,
   onColorFromChange,
@@ -135,12 +154,6 @@ export const SettingsPanel = ({
 }: SettingsPanelProps) => {
   const panelRef =
     useRef<HTMLDivElement>(null);
-
-  const [view, setView] =
-    useState<SettingsView>("settings");
-
-  const [isGoogleConnected, setIsGoogleConnected] =
-    useState(false);
 
   // ============================================================
   // ESCAPE KEY
@@ -184,7 +197,7 @@ export const SettingsPanel = ({
   // GOOGLE
   // ============================================================
 
-  const handleGoogleConnect = () => {
+    const handleGoogleConnect = () => {
     /*
      * UI-only for now.
      *
@@ -192,8 +205,19 @@ export const SettingsPanel = ({
      * connection logic when the backend is ready.
      */
 
-    setIsGoogleConnected(
-      (current) => !current
+    onGoogleConnectedChange(!isGoogleConnected);
+  };
+
+  const handleCheckGoogleStatus = () => {
+    /*
+     * UI-only for now.
+     *
+     * Replace this with your actual Google connection
+     * status check when the backend is ready.
+     */
+
+    console.log(
+      "Check Google status clicked"
     );
   };
 
@@ -211,80 +235,54 @@ export const SettingsPanel = ({
   // RENDER
   // ============================================================
 
-  return (
+    return (
     <>
       {/* ========================================================
-          BACKDROP
-          ======================================================== */}
-
-      <div
-        onClick={onClose}
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          background:
-            "rgba(0, 0, 0, 0.45)",
-
-          opacity: open ? 1 : 0,
-
-          pointerEvents: open
-            ? "auto"
-            : "none",
-
-          transition:
-            "opacity 0.3s ease",
-
-          zIndex: 70,
-        }}
-      />
-
-      {/* ========================================================
-          SETTINGS DRAWER
+          SETTINGS PANEL
+          (Positioned to the right of the sidebar, same as the
+          Task / E-Mail / Calendar / File pages.)
           ======================================================== */}
 
       <div
         ref={panelRef}
         role="dialog"
         aria-label="Settings"
-        aria-hidden={!open}
+        aria-hidden={!(open && view === "settings")}
         style={{
           position: "fixed",
-          top: 0,
-          left: 0,
-
-          height: "100%",
-
-          width: 320,
+          top: 32,
+          left: sidebarWidth,
+          right: 0,
+          bottom: 0,
 
           background:
-            "var(--toggle-bg)",
+            "var(--background)",
 
-          borderRight:
-            "1px solid var(--toggle-border)",
-
-          boxShadow:
-            "8px 0 32px rgba(0, 0, 0, 0.35)",
-
-          transform: open
-            ? "translateX(0)"
-            : "translateX(-100%)",
-
-          transition:
-            "transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)",
-
-          zIndex: 80,
+          zIndex: 75,
 
           display: "flex",
           flexDirection: "column",
 
           padding:
-            "44px 18px 20px",
+            "24px 28px 28px",
 
           boxSizing:
             "border-box",
 
           overflowY: "auto",
+
+          opacity: open && view === "settings" ? 1 : 0,
+
+          transform: open && view === "settings"
+            ? "translateX(0)"
+            : "translateX(24px)",
+
+          pointerEvents: open && view === "settings"
+            ? "auto"
+            : "none",
+
+          transition:
+            "opacity 0.28s ease, transform 0.28s ease, left 0.28s ease",
         }}
       >
         {/* ======================================================
@@ -552,66 +550,130 @@ export const SettingsPanel = ({
                 </div>
               </div>
 
-              {/* CONNECT BUTTON */}
+                            {/* CONNECT / DISCONNECT + CHECK STATUS BUTTONS */}
 
-              <button
-                type="button"
-                onClick={
-                  handleGoogleConnect
-                }
+              <div
                 style={{
                   marginTop: 12,
 
-                  width: 150,
-                  height: 38,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
 
-                  padding:
-                    "0 14px",
-
-                  border: "none",
-
-                  borderRadius: 8,
-
-                  background:
-                    isGoogleConnected
-                      ? "var(--toggle-hover)"
-                      : "#8b78f6",
-
-                  color:
-                    isGoogleConnected
-                      ? "var(--foreground)"
-                      : "#ffffff",
-
-                  fontSize: 12,
-
-                  fontWeight: 650,
-
-                  cursor:
-                    "pointer",
-
-                  transition:
-                    "transform 0.15s ease, background 0.15s ease",
-
-                  alignSelf:
-                    "flex-start",
-                }}
-                onMouseEnter={(
-                  event
-                ) => {
-                  event.currentTarget.style.transform =
-                    "translateY(-1px)";
-                }}
-                onMouseLeave={(
-                  event
-                ) => {
-                  event.currentTarget.style.transform =
-                    "translateY(0)";
+                  alignSelf: "flex-start",
                 }}
               >
-                {isGoogleConnected
-                  ? "Disconnect Google"
-                  : "Connect Google"}
-              </button>
+                {/* CHECK STATUS BUTTON — only shown once connected */}
+
+                {isGoogleConnected && (
+                  <button
+                    type="button"
+                    onClick={
+                      handleCheckGoogleStatus
+                    }
+                    style={{
+                      height: 38,
+
+                      padding:
+                        "0 14px",
+
+                      border:
+                        "1px solid var(--toggle-border)",
+
+                      borderRadius: 8,
+
+                      background:
+                        "var(--background)",
+
+                      color:
+                        "var(--foreground)",
+
+                      fontSize: 12,
+
+                      fontWeight: 650,
+
+                      cursor:
+                        "pointer",
+
+                      transition:
+                        "transform 0.15s ease, background 0.15s ease",
+                    }}
+                    onMouseEnter={(
+                      event
+                    ) => {
+                      event.currentTarget.style.transform =
+                        "translateY(-1px)";
+                    }}
+                    onMouseLeave={(
+                      event
+                    ) => {
+                      event.currentTarget.style.transform =
+                        "translateY(0)";
+                    }}
+                  >
+                    Check Status
+                  </button>
+                )}
+
+                {/* CONNECT / DISCONNECT BUTTON */}
+
+                <button
+                  type="button"
+                  onClick={
+                    handleGoogleConnect
+                  }
+                  style={{
+                    width: 150,
+                    height: 38,
+
+                    padding:
+                      "0 14px",
+
+                    border:
+                      isGoogleConnected
+                        ? "1px solid #ef4444"
+                        : "none",
+
+                    borderRadius: 8,
+
+                    background:
+                      isGoogleConnected
+                        ? "var(--toggle-hover)"
+                        : "#8b78f6",
+
+                    color:
+                      isGoogleConnected
+                        ? "#ef4444"
+                        : "#ffffff",
+
+                    fontSize: 12,
+
+                    fontWeight: 650,
+
+                    cursor:
+                      "pointer",
+
+                    transition:
+                      "transform 0.15s ease, background 0.15s ease",
+                  }}
+                  onMouseEnter={(
+                    event
+                  ) => {
+                    event.currentTarget.style.transform =
+                      "translateY(-1px)";
+                  }}
+                  onMouseLeave={(
+                    event
+                  ) => {
+                    event.currentTarget.style.transform =
+                      "translateY(0)";
+                  }}
+                >
+                  {isGoogleConnected
+                    ? "Disconnect Google"
+                    : "Connect Google"}
+                </button>
+              </div>
             </div>
 
             {/* ==================================================
@@ -775,9 +837,60 @@ export const SettingsPanel = ({
                 />
               </svg>
             </button>
-          </>
+                    </>
         )}
+      </div>
 
+      {/* ========================================================
+          ORB CUSTOMIZATION DRAWER
+          (Opens over the sidebar, on the left. The right-side
+          settings panel and the main sidebar are hidden while
+          this is open — see Home()'s render for that logic.)
+          ======================================================== */}
+
+      <div
+        role="dialog"
+        aria-label="Orb Customization"
+        aria-hidden={!(open && view === "orb-customization")}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+
+          height: "100%",
+
+          width: 320,
+
+          background:
+            "var(--toggle-bg)",
+
+          borderRight:
+            "1px solid var(--toggle-border)",
+
+          boxShadow:
+            "8px 0 32px rgba(0, 0, 0, 0.35)",
+
+          transform: open && view === "orb-customization"
+            ? "translateX(0)"
+            : "translateX(-100%)",
+
+          transition:
+            "transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)",
+
+          zIndex: 80,
+
+          display: "flex",
+          flexDirection: "column",
+
+          padding:
+            "44px 18px 20px",
+
+          boxSizing:
+            "border-box",
+
+          overflowY: "auto",
+        }}
+      >
         {/* ======================================================
             ORB CUSTOMIZATION PAGE
             ====================================================== */}
@@ -1038,7 +1151,7 @@ export const SettingsPanel = ({
                     "wrap",
                 }}
               >
-                {/* FROM */}
+                {/* PARTICULAR 1 */}
 
                 <label
                   style={{
@@ -1080,7 +1193,7 @@ export const SettingsPanel = ({
                   />
 
                   <span
-                    title="Choose From color"
+                    title="Choose Particular 1 color"
                     style={{
                       width: 30,
                       height: 22,
@@ -1111,11 +1224,11 @@ export const SettingsPanel = ({
                       fontWeight: 500,
                     }}
                   >
-                    From
+                    Particular 1
                   </span>
                 </label>
 
-                {/* TO */}
+                {/* PARTICULAR 2 */}
 
                 <label
                   style={{
@@ -1157,7 +1270,7 @@ export const SettingsPanel = ({
                   />
 
                   <span
-                    title="Choose To color"
+                    title="Choose Particular 2 color"
                     style={{
                       width: 30,
                       height: 22,
@@ -1188,7 +1301,7 @@ export const SettingsPanel = ({
                       fontWeight: 500,
                     }}
                   >
-                    To
+                    Particular 2
                   </span>
                 </label>
               </div>
@@ -1285,7 +1398,7 @@ export const SettingsPanel = ({
                     <button
                       key={key}
                       type="button"
-                      title={`${key} (${SIZE_PRESETS[key]}px)`}
+                      title={`${SIZE_LABELS[key]} (${SIZE_PRESETS[key]}px)`}
                       onClick={() =>
                         onSizeChange(
                           key
@@ -1320,7 +1433,7 @@ export const SettingsPanel = ({
                           "background-color 0.15s ease, color 0.15s ease",
                       }}
                     >
-                      {key}
+                      {SIZE_LABELS[key]}
                     </button>
                   );
                 })}
@@ -1491,8 +1604,17 @@ export default function Home() {
   // SETTINGS
   // ==========================================================
 
-  const [isSettingsOpen, setIsSettingsOpen] =
+    const [isSettingsOpen, setIsSettingsOpen] =
     useState(false);
+
+  const [settingsView, setSettingsView] =
+    useState<SettingsView>("settings");
+
+  // Sidebar is hidden while the orb-customization drawer
+  // (which opens over the same left-hand area) is showing.
+  const isSidebarVisible =
+    isSidebarOpen &&
+    !(isSettingsOpen && settingsView === "orb-customization");
 
 
   // ==========================================================
@@ -1783,12 +1905,12 @@ const calendarSelectedEvents =
   const handleNavigation = (
     key: string
   ) => {
-    if (key === "settings") {
-      setIsSettingsOpen(true);
-      setIsSidebarOpen(false);
-      setActivePage(null);
-      return;
-    }
+        if (key === "settings") {
+          setIsSettingsOpen(true);
+          setActivePage(null);
+          setIsSidebarOpen(true);
+          return;
+        }
 
     if (key === "chat") {
       setActivePage(null);
@@ -1836,16 +1958,17 @@ const calendarSelectedEvents =
           ====================================================== */}
 
       <Sidebar
-        open={isSidebarOpen}
+        open={isSidebarVisible}
         onOpen={() =>
           setIsSidebarOpen(true)
         }
         onClose={() => {
           setIsSidebarOpen(false);
           setActivePage(null);
+          setIsSettingsOpen(false);
         }}
         hideBackdrop={
-          activePage !== null
+          activePage !== null || isSettingsOpen
         }
         onNavigate={
           handleNavigation
@@ -1898,8 +2021,12 @@ const calendarSelectedEvents =
         open={isSettingsOpen}
         onClose={() => {
           setIsSettingsOpen(false);
-          setIsSidebarOpen(true);
         }}
+        sidebarWidth={sidebarWidth}
+        view={settingsView}
+        setView={setSettingsView}
+        isGoogleConnected={isGoogleConnected}
+        onGoogleConnectedChange={setIsGoogleConnected}
         colorFrom={colorFrom}
         colorTo={colorTo}
         onColorFromChange={
